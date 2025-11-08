@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "685582539479",
+    "project_id": "footy-backend-d4eb8",
+    "storage_bucket": "footy-backend-d4eb8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:685582539479:android:827b1362ad117d2e102e92",
+        "android_client_info": {
+          "package_name": "com.balltalk.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBhLaryEIAy3gglScGb-7dB9MDugUGosg0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

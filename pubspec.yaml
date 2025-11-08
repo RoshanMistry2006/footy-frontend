@@ -1,0 +1,72 @@
+name: footy_frontend
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.9.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+  # Firebase
+  firebase_core: ^4.1.0
+  firebase_auth: ^6.0.2
+  cloud_firestore: ^6.0.1
+  firebase_storage: ^13.0.1
+  http: ^1.2.2
+  socket_io_client: ^3.0.2
+  image_picker: ^1.2.0
+  flutter_native_splash: ^2.4.7
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+  # ✅ Add flutter_launcher_icons for app icon generation
+  flutter_launcher_icons: ^0.13.1
+
+# ==========================================================
+#                    FLUTTER SETTINGS
+# ==========================================================
+flutter:
+
+  uses-material-design: true
+
+  fonts:
+    - family: Poppins
+      fonts:
+        - asset: fonts/Poppins-Regular.ttf
+        - asset: fonts/Poppins-Bold.ttf
+          weight: 700
+
+  # ✅ Add your BallTalk logo asset here
+  assets:
+    - assets/logo.png
+
+# ==========================================================
+#                APP ICON CONFIGURATION
+# ==========================================================
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/logo.png"
+  adaptive_icon_background: "#0B0D10"
+  adaptive_icon_foreground: "assets/logo.png"
+
+# ==========================================================
+#                SPLASH SCREEN CONFIGURATION
+# ==========================================================
+flutter_native_splash:
+  color: "#0B0D10"           # dark BallTalk background
+  image: assets/logo.png     # your logo path
+  branding: null
+  android_12:
+    image: assets/logo.png
+    icon_background_color: "#0B0D10"
+  web: false
+
