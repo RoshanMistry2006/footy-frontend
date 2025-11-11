@@ -5,8 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'today_question_page.dart';
 import 'profile_header.dart';
-import 'pages/all_debate_requests_page.dart'; // ✅ NEW import
-
+import 'pages/all_debate_requests_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,7 +25,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       themeMode: ThemeMode.dark,
 
-      // ✅ LIGHT THEME
+      // ✅ Light Theme
       theme: ThemeData(
         useMaterial3: true,
         fontFamily: 'Poppins',
@@ -62,7 +61,7 @@ class MyApp extends StatelessWidget {
         ),
       ),
 
-      // 🌑 DARK SPORTY THEME
+      // 🌑 Dark Sporty Theme
       darkTheme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.dark,
@@ -119,9 +118,9 @@ class MyApp extends StatelessWidget {
         ),
       ),
 
-      // ✅ ROUTES
+      // ✅ Routes
       routes: {
-        '/requests': (_) => const AllDebateRequestsPage(), // 🔄 updated route
+        '/requests': (_) => AllDebateRequestsPage(), // removed const
       },
 
       home: StreamBuilder<User?>(
@@ -424,7 +423,6 @@ class LoggedInHome extends StatelessWidget {
     if (user == null) {
       return const Scaffold(body: Center(child: Text('Please sign in again.')));
     }
-
     return const Scaffold(
       body: TodayQuestionPage(),
     );

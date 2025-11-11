@@ -43,12 +43,10 @@ class _AllDebateRequestsPageState extends State<AllDebateRequestsPage>
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-
     return Scaffold(
       backgroundColor: const Color(0xFF0B0D0D),
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(96), // +4px to fix overflow
+        preferredSize: const Size.fromHeight(96), // Avoids overflow
         child: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
@@ -63,12 +61,15 @@ class _AllDebateRequestsPageState extends State<AllDebateRequestsPage>
               SafeArea(
                 bottom: false,
                 child: Padding(
-                  padding: const EdgeInsets.only(left: 8, right: 8, bottom: 2), // small tweak
+                  padding:
+                      const EdgeInsets.only(left: 8, right: 8, bottom: 2), // small tweak
                   child: Row(
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                            color: Colors.white),
+                        icon: const Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          color: Colors.white,
+                        ),
                         onPressed: () => Navigator.pop(context),
                       ),
                       const Expanded(
@@ -90,7 +91,7 @@ class _AllDebateRequestsPageState extends State<AllDebateRequestsPage>
                 ),
               ),
 
-              // 💡 Glow bar (now perfectly contained)
+              // 💡 Animated glow bar under the tab titles
               SizedBox(
                 height: 44,
                 child: LayoutBuilder(
@@ -102,7 +103,7 @@ class _AllDebateRequestsPageState extends State<AllDebateRequestsPage>
                       children: [
                         AnimatedBuilder(
                           animation: _animationController,
-                          builder: (context, child) {
+                          builder: (context, _) {
                             final position =
                                 _animationController.value * tabWidth;
                             return Transform.translate(
@@ -133,7 +134,7 @@ class _AllDebateRequestsPageState extends State<AllDebateRequestsPage>
                           },
                         ),
 
-                        // 🏷️ TabBar (unchanged)
+                        // 🏷️ TabBar
                         TabBar(
                           controller: _tabController,
                           indicatorColor: Colors.transparent,
@@ -159,9 +160,7 @@ class _AllDebateRequestsPageState extends State<AllDebateRequestsPage>
         ),
       ),
 
-
-
-      // 🌊 Smooth sliding & fading content transition
+      // 🌊 Smooth sliding + fading tab transitions
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 450),
         switchInCurve: Curves.easeOutCubic,

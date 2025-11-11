@@ -12,7 +12,8 @@ class ChatService {
   // 🔐 AUTH HEADERS
   // =====================================================
   Future<Map<String, String>> _headers() async {
-    final token = await FirebaseAuth.instance.currentUser?.getIdToken(true);
+    final user = FirebaseAuth.instance.currentUser;
+    final token = await user?.getIdToken(true);
     if (token == null) throw Exception("User not authenticated.");
     return {
       'Content-Type': 'application/json',
@@ -42,9 +43,13 @@ class ChatService {
     print("📥 Response body: ${res.body}");
 
     if (res.statusCode != 201) {
-      final body = jsonDecode(res.body);
-      final error = body['error'] ?? 'Failed to send request';
-      throw Exception(error);
+      try {
+        final body = jsonDecode(res.body);
+        final error = body['error'] ?? 'Failed to send request';
+        throw Exception(error);
+      } catch (_) {
+        throw Exception('Failed to send request (${res.statusCode})');
+      }
     }
   }
 
@@ -78,8 +83,7 @@ class ChatService {
       final status = r['status'] ?? '';
       if (status == 'declined') return false;
       if (r['expiresAt'] != null) {
-        final expiry =
-            DateTime.fromMillisecondsSinceEpoch(r['expiresAt'] as int);
+        final expiry = DateTime.fromMillisecondsSinceEpoch(r['expiresAt'] as int);
         if (now.isAfter(expiry)) return false;
       }
       return true;
@@ -88,7 +92,7 @@ class ChatService {
     return list;
   }
 
-  /// 📨 NEW: Fetch all SENT debate requests (where current user is requester)
+  /// 📨 Fetch all SENT debate requests (where current user is requester)
   Future<List<dynamic>> getSentRequests() async {
     final uid = FirebaseAuth.instance.currentUser!.uid;
     final res = await http.get(
@@ -112,14 +116,13 @@ class ChatService {
       list = body['requests'] as List<dynamic>;
     }
 
-    // ✅ Filter expired requests client-side (accepted only)
+    // ✅ Filter expired requests client-side
     final now = DateTime.now();
     list = list.where((r) {
       final status = r['status'] ?? '';
-      if (status == 'declined') return false; // should already be deleted
+      if (status == 'declined') return false;
       if (r['expiresAt'] != null) {
-        final expiry =
-            DateTime.fromMillisecondsSinceEpoch(r['expiresAt'] as int);
+        final expiry = DateTime.fromMillisecondsSinceEpoch(r['expiresAt'] as int);
         if (now.isAfter(expiry)) return false;
       }
       return true;
@@ -128,6 +131,7 @@ class ChatService {
     return list;
   }
 
+  /// ✅ Respond to debate request
   Future<void> respond(String requestId, String action) async {
     final res = await http.post(
       Uri.parse('$baseUrl/api/chats/respond'),
@@ -139,9 +143,13 @@ class ChatService {
     print("📦 Body: ${res.body}");
 
     if (res.statusCode != 200 && res.statusCode != 201) {
-      final body = jsonDecode(res.body);
-      final error = body['error'] ?? 'Failed to respond to request';
-      throw Exception(error);
+      try {
+        final body = jsonDecode(res.body);
+        final error = body['error'] ?? 'Failed to respond to request';
+        throw Exception(error);
+      } catch (_) {
+        throw Exception('Failed to respond (${res.statusCode})');
+      }
     }
   }
 
@@ -170,9 +178,13 @@ class ChatService {
     print("💬 GET /messages ($chatId) → ${res.statusCode}");
 
     if (res.statusCode != 200) {
-      final body = jsonDecode(res.body);
-      final error = body['error'] ?? 'Failed to fetch messages';
-      throw Exception(error);
+      try {
+        final body = jsonDecode(res.body);
+        final error = body['error'] ?? 'Failed to fetch messages';
+        throw Exception(error);
+      } catch (_) {
+        throw Exception('Failed to fetch messages (${res.statusCode})');
+      }
     }
 
     return jsonDecode(res.body);
@@ -197,7 +209,7 @@ class ChatService {
         final body = jsonDecode(res.body);
         final error = body['error'] ?? 'Failed to send message';
         throw Exception(error);
-      } catch (e) {
+      } catch (_) {
         throw Exception('Failed to send message (${res.statusCode})');
       }
     }
@@ -213,6 +225,7 @@ class ChatService {
       IO.OptionBuilder()
           .setTransports(['websocket'])
           .setQuery({'tokenUid': tokenUid})
+          .enableReconnection()
           .build(),
     );
 
@@ -224,7 +237,6 @@ class ChatService {
       print("⚠️ Socket disconnected");
     });
 
-    // ✅ Listen for accepted/declined events
     socket!.on('chat:accepted', (data) {
       print("🎉 Your debate request was accepted → $data");
     });
@@ -256,4 +268,5 @@ class ChatService {
     socket = null;
   }
 }
+
 

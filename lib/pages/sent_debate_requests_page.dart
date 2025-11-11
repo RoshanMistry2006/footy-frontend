@@ -29,11 +29,13 @@ class _SentDebateRequestsPageState extends State<SentDebateRequestsPage> {
 
     try {
       final data = await _chat.getSentRequests();
+      if (!mounted) return;
       setState(() {
         _sent = data;
         _loading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e.toString();
         _loading = false;
@@ -82,114 +84,117 @@ class _SentDebateRequestsPageState extends State<SentDebateRequestsPage> {
                         ),
                       ),
                     )
-                  : RefreshIndicator(
-                      color: Colors.tealAccent,
-                      backgroundColor: const Color(0xFF0B0D0D),
-                      onRefresh: _load,
-                      child: ListView.builder(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 12),
-                        itemCount: _sent.length,
-                        itemBuilder: (context, index) {
-                          final r = _sent[index];
-                          final status = (r['status'] ?? '').toString();
-                          final glowColor = status == 'accepted'
-                              ? Colors.greenAccent
-                              : status == 'declined'
-                                  ? Colors.redAccent
-                                  : Colors.tealAccent;
+                  : SafeArea( // ✅ Ensures perfect iOS pull-to-refresh behavior
+                      child: RefreshIndicator(
+                        color: Colors.tealAccent,
+                        backgroundColor: const Color(0xFF0B0D0D),
+                        onRefresh: _load,
+                        child: ListView.builder(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 12),
+                          itemCount: _sent.length,
+                          itemBuilder: (context, index) {
+                            final r = _sent[index];
+                            final status = (r['status'] ?? '').toString();
+                            final glowColor = status == 'accepted'
+                                ? Colors.greenAccent
+                                : status == 'declined'
+                                    ? Colors.redAccent
+                                    : Colors.tealAccent;
 
-                          return AnimatedContainer(
-                            duration: const Duration(milliseconds: 350),
-                            curve: Curves.easeInOut,
-                            margin: const EdgeInsets.symmetric(vertical: 8),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: status == 'accepted'
-                                    ? [const Color(0xFF004D40), const Color(0xFF00796B)]
-                                    : status == 'declined'
-                                        ? [const Color(0xFF2E0A0A), const Color(0xFF1B0000)]
-                                        : [const Color(0xFF141414), const Color(0xFF0B0D0D)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(18),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: glowColor.withOpacity(0.35),
-                                  blurRadius: 14,
-                                  spreadRadius: 1.5,
-                                  offset: const Offset(0, 5),
+                            return AnimatedContainer(
+                              duration: const Duration(milliseconds: 350),
+                              curve: Curves.easeInOut,
+                              margin: const EdgeInsets.symmetric(vertical: 8),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: status == 'accepted'
+                                      ? [const Color(0xFF004D40), const Color(0xFF00796B)]
+                                      : status == 'declined'
+                                          ? [const Color(0xFF2E0A0A), const Color(0xFF1B0000)]
+                                          : [const Color(0xFF141414), const Color(0xFF0B0D0D)],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
                                 ),
-                              ],
-                              border: Border.all(
-                                color: glowColor.withOpacity(0.6),
-                                width: 1.3,
-                              ),
-                            ),
-                            child: ListTile(
-                              contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 20, vertical: 14),
-                              title: Text(
-                                "To: ${r['toDisplayName'] ?? 'Unknown'}",
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
+                                borderRadius: BorderRadius.circular(18),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: glowColor.withOpacity(0.35),
+                                    blurRadius: 14,
+                                    spreadRadius: 1.5,
+                                    offset: const Offset(0, 5),
+                                  ),
+                                ],
+                                border: Border.all(
+                                  color: glowColor.withOpacity(0.6),
+                                  width: 1.3,
                                 ),
                               ),
-                              subtitle: Padding(
-                                padding: const EdgeInsets.only(top: 6),
-                                child: Text(
-                                  "Topic: ${r['topic'] ?? '—'}",
+                              child: ListTile(
+                                contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 20, vertical: 14),
+                                title: Text(
+                                  "To: ${r['toDisplayName'] ?? 'Unknown'}",
                                   style: const TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 13.5,
-                                  ),
-                                ),
-                              ),
-                              trailing: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 5),
-                                decoration: BoxDecoration(
-                                  color: glowColor.withOpacity(0.12),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                      color: glowColor.withOpacity(0.5),
-                                      width: 1.2),
-                                ),
-                                child: Text(
-                                  status.toUpperCase(),
-                                  style: TextStyle(
-                                    color: glowColor,
+                                    color: Colors.white,
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 12.5,
-                                    letterSpacing: 0.5,
+                                    fontSize: 16,
                                   ),
                                 ),
-                              ),
-                              onTap: status == "accepted"
-                                  ? () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => PrivateChatPage(
-                                            chatId: r['id'],
-                                            debateTopic:
-                                                r['topic'] ?? 'Debate topic',
-                                            opponentName:
-                                                r['toDisplayName'] ?? 'User',
+                                subtitle: Padding(
+                                  padding: const EdgeInsets.only(top: 6),
+                                  child: Text(
+                                    "Topic: ${r['topic'] ?? '—'}",
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 13.5,
+                                    ),
+                                  ),
+                                ),
+                                trailing: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 5),
+                                  decoration: BoxDecoration(
+                                    color: glowColor.withOpacity(0.12),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                        color: glowColor.withOpacity(0.5),
+                                        width: 1.2),
+                                  ),
+                                  child: Text(
+                                    status.toUpperCase(),
+                                    style: TextStyle(
+                                      color: glowColor,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12.5,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ),
+                                onTap: status == "accepted"
+                                    ? () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => PrivateChatPage(
+                                              chatId: r['id'],
+                                              debateTopic:
+                                                  r['topic'] ?? 'Debate topic',
+                                              opponentName:
+                                                  r['toDisplayName'] ?? 'User',
+                                            ),
                                           ),
-                                        ),
-                                      );
-                                    }
-                                  : null,
-                            ),
-                          );
-                        },
+                                        );
+                                      }
+                                    : null,
+                              ),
+                            );
+                          },
+                        ),
                       ),
                     ),
     );
   }
 }
+

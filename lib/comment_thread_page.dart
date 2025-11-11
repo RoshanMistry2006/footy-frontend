@@ -33,8 +33,6 @@ class _CommentThreadPageState extends State<CommentThreadPage> {
   String? replyingTo;
   String? replyingToName;
   final Set<String> _expanded = {};
-
-  // ✅ NEW: Track who’s already been challenged
   final Set<String> challengedUserIds = {};
 
   final List<String> _bannedWords = [
@@ -90,7 +88,7 @@ class _CommentThreadPageState extends State<CommentThreadPage> {
     } catch (e) {
       error = e.toString();
     }
-    setState(() => loading = false);
+    if (mounted) setState(() => loading = false);
   }
 
   // ---------- POST COMMENT ----------
@@ -346,7 +344,8 @@ class _CommentThreadPageState extends State<CommentThreadPage> {
     final double buttonFontSize = (13 - cappedDepth * 0.8).clamp(9.0, 13.0);
     final bool isMaxDepth = depth >= 3;
 
-    final bgColor = Color.lerp(Colors.grey.shade900, Colors.grey.shade800, depth / 4);
+    final bgColor =
+        Color.lerp(Colors.grey.shade900, Colors.grey.shade800, depth / 4);
     final textColor = Colors.white.withOpacity(0.9);
 
     return AnimatedContainer(
@@ -362,6 +361,7 @@ class _CommentThreadPageState extends State<CommentThreadPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Avatar + Name
             Row(
               children: [
                 CircleAvatar(
@@ -389,7 +389,10 @@ class _CommentThreadPageState extends State<CommentThreadPage> {
                 ),
               ],
             ),
+
             const SizedBox(height: 4),
+
+            // Text
             Padding(
               padding: const EdgeInsets.only(left: 8),
               child: Text(
@@ -401,7 +404,10 @@ class _CommentThreadPageState extends State<CommentThreadPage> {
                 ),
               ),
             ),
+
             const SizedBox(height: 4),
+
+            // Reply + Challenge Buttons
             Padding(
               padding: const EdgeInsets.only(left: 8),
               child: Row(
@@ -469,6 +475,8 @@ class _CommentThreadPageState extends State<CommentThreadPage> {
                 ],
               ),
             ),
+
+            // Replies
             if (hasReplies)
               AnimatedCrossFade(
                 firstChild: const SizedBox.shrink(),
@@ -481,6 +489,8 @@ class _CommentThreadPageState extends State<CommentThreadPage> {
                     : CrossFadeState.showFirst,
                 duration: const Duration(milliseconds: 250),
               ),
+
+            // Toggle replies
             if (hasReplies)
               Align(
                 alignment: Alignment.centerRight,
@@ -496,7 +506,10 @@ class _CommentThreadPageState extends State<CommentThreadPage> {
                   },
                   child: Text(
                     isExpanded ? "Hide replies" : "View replies",
-                    style: TextStyle(fontSize: fontSize - 2, color: Colors.white70),
+                    style: TextStyle(
+                      fontSize: fontSize - 2,
+                      color: Colors.white70,
+                    ),
                   ),
                 ),
               ),

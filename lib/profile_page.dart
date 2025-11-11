@@ -37,7 +37,6 @@ class _ProfilePageState extends State<ProfilePage> {
     _email = user.email;
     final db = FirebaseFirestore.instance;
 
-    // --- Load profile info ---
     final userRef = db.collection('users').doc(user.uid);
     final userSnap = await userRef.get();
 
@@ -49,7 +48,7 @@ class _ProfilePageState extends State<ProfilePage> {
       _bestAnswers = (data['discussionsWon'] ?? 0) as int;
       _totalAnswers = (data['totalComments'] ?? 0) as int;
     } else {
-      // fallback for first-time users
+      // Fallback for new users
       await userRef.set({
         'displayName': user.displayName ?? '',
         'favoriteTeam': '',
@@ -60,7 +59,7 @@ class _ProfilePageState extends State<ProfilePage> {
       });
     }
 
-    setState(() {});
+    if (mounted) setState(() {});
   }
 
   Future<void> _save() async {
@@ -131,7 +130,8 @@ class _ProfilePageState extends State<ProfilePage> {
               controller: currentPasswordCtrl,
               obscureText: true,
               style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(labelText: 'Current password'),
+              decoration:
+                  const InputDecoration(labelText: 'Current password'),
             ),
             TextField(
               controller: newPasswordCtrl,
@@ -169,8 +169,8 @@ class _ProfilePageState extends State<ProfilePage> {
         const SnackBar(content: Text('✅ Password changed successfully')),
       );
     } catch (e) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Password change failed: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Password change failed: $e')));
     }
   }
 
@@ -204,9 +204,11 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
           ),
         ),
-        title: const Text('Profile',
-            style: TextStyle(
-                color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20)),
+        title: const Text(
+          'Profile',
+          style: TextStyle(
+              color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
+        ),
         foregroundColor: Colors.white,
       ),
       body: SafeArea(
@@ -289,8 +291,9 @@ class _ProfilePageState extends State<ProfilePage> {
                         filled: true,
                         fillColor: Colors.grey.shade900,
                         border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none),
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
                       ),
                       validator: (v) =>
                           (v == null || v.trim().isEmpty) ? 'Required' : null,
@@ -305,8 +308,9 @@ class _ProfilePageState extends State<ProfilePage> {
                         filled: true,
                         fillColor: Colors.grey.shade900,
                         border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none),
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
                       ),
                     ),
                   ],
@@ -341,8 +345,8 @@ class _ProfilePageState extends State<ProfilePage> {
                 onPressed: _saving ? null : _save,
                 style: FilledButton.styleFrom(
                   backgroundColor: primary,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 40, vertical: 14),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
                 ),
@@ -376,8 +380,8 @@ class _ProfilePageState extends State<ProfilePage> {
                   backgroundColor: Colors.redAccent.withOpacity(0.9),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 14, horizontal: 40),
+                  padding: const EdgeInsets.symmetric(
+                      vertical: 14, horizontal: 40),
                 ),
                 icon: const Icon(Icons.logout, color: Colors.white),
                 label: const Text('Sign out',

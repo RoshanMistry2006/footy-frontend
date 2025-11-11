@@ -27,6 +27,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
 
   List messages = [];
   bool _loading = true;
+  DateTime _lastHaptic = DateTime.now().subtract(const Duration(seconds: 2));
 
   @override
   void initState() {
@@ -38,15 +39,23 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
     try {
       _chat.connectSocket(_uid);
       _chat.joinChat(widget.chatId);
+
+      // ✅ iOS-safe: Guard setState + lifecycle for socket events
       _chat.onMessage((data) {
-        if (mounted) {
-          setState(() => messages.add(data));
-          _scrollToBottom();
+        if (!mounted) return;
+        setState(() => messages.add(data));
+        _scrollToBottom();
+
+        // ✅ Gentle throttling for iOS haptics (prevents stutter)
+        final now = DateTime.now();
+        if (now.difference(_lastHaptic).inMilliseconds > 250) {
           HapticFeedback.selectionClick();
+          _lastHaptic = now;
         }
       });
 
       final loadedMessages = await _chat.getMessages(widget.chatId);
+      if (!mounted) return;
       setState(() {
         messages = loadedMessages;
         _loading = false;
@@ -54,7 +63,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
       _scrollToBottom();
     } catch (e) {
       debugPrint("💥 Chat load failed: $e");
-      setState(() => _loading = false);
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -77,9 +86,15 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
     try {
       await _chat.sendMessage(widget.chatId, text);
       _ctrl.clear();
-      HapticFeedback.lightImpact();
+
+      // ✅ Slightly delayed haptic to ensure proper trigger on iOS
+      Future.delayed(const Duration(milliseconds: 50), () {
+        if (mounted) HapticFeedback.lightImpact();
+      });
+
       _scrollToBottom();
     } catch (e) {
+      if (!mounted) return;
       final error = e.toString();
       if (error.contains("banned words")) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -130,7 +145,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
         foregroundColor: Colors.white,
         titleSpacing: 0,
         title: Padding(
-          padding: const EdgeInsets.only(top: 6), // ✅ fixes notch overlap
+          padding: const EdgeInsets.only(top: 6),
           child: Row(
             children: [
               const CircleAvatar(
@@ -206,7 +221,6 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
     );
   }
 
-  // ---------- CHAT BUBBLE ----------
   Widget _buildMessageBubble(Map<String, dynamic> m, Color primary) {
     final isMe = m['senderUid'] == _uid;
     final messageText = m['text'] ?? '';
@@ -227,7 +241,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
       margin: EdgeInsets.only(
         top: 6,
         bottom: 6,
-        left: isMe ? 60 : 12, // ✅ space between sides
+        left: isMe ? 60 : 12,
         right: isMe ? 12 : 60,
       ),
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
@@ -269,7 +283,6 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
     );
   }
 
-  // ---------- INPUT BAR ----------
   Widget _buildInputBar(Color primary) {
     return SafeArea(
       child: Container(
@@ -340,4 +353,3 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
     );
   }
 }
-

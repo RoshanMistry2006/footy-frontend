@@ -8,12 +8,13 @@ import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'comment_thread_page.dart';
 import 'profile_page.dart';
 import '../pages/premium_design_page.dart';
-import '../pages/all_debate_requests_page.dart'; // ✅ NEW import
+import '../pages/all_debate_requests_page.dart'; // ✅ Import for debate requests
 
 const String _origin = "https://footy-backend-yka8.onrender.com";
 
 class TodayQuestionPage extends StatefulWidget {
   const TodayQuestionPage({super.key});
+
   @override
   State<TodayQuestionPage> createState() => _TodayQuestionPageState();
 }
@@ -31,7 +32,7 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> {
   IO.Socket? _socket;
   bool isAdmin = false;
   Map<String, dynamic>? winner;
-  String currentDate = DateTime.now().toIso8601String().substring(0, 10);
+  final String currentDate = DateTime.now().toIso8601String().substring(0, 10);
 
   Timer? _countdownTimer;
   Duration _timeLeft = Duration.zero;
@@ -41,7 +42,7 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> {
   @override
   void initState() {
     super.initState();
-    print("👤 Logged in user UID: ${FirebaseAuth.instance.currentUser?.uid}");
+    debugPrint("👤 Logged in user UID: ${FirebaseAuth.instance.currentUser?.uid}");
     _bootstrap();
     _connectSocket();
     _checkAdminClaim();
@@ -55,7 +56,10 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> {
     final user = FirebaseAuth.instance.currentUser;
     final token = await user?.getIdToken(true);
     if (token == null) throw Exception("⚠️ No Firebase token found – please log in again.");
-    return {"Content-Type": "application/json", "Authorization": "Bearer $token"};
+    return {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer $token",
+    };
   }
 
   Future<void> _bootstrap() async {
@@ -71,7 +75,8 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> {
         _getWinner(silent: true),
       ]);
       _startCountdown();
-    } catch (e) {
+    } catch (e, st) {
+      debugPrint("💥 Bootstrap error: $e\n$st");
       if (mounted) setState(() => error = e.toString());
     } finally {
       if (mounted) setState(() => loading = false);
@@ -79,7 +84,10 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> {
   }
 
   Future<void> _loadQuestion() async {
-    final res = await http.get(Uri.parse(_api("/questions/$currentDate")), headers: await _headers());
+    final res = await http.get(
+      Uri.parse(_api("/questions/$currentDate")),
+      headers: await _headers(),
+    );
     if (res.statusCode == 200) {
       setState(() => questionText = jsonDecode(res.body)["text"]);
     } else {
@@ -96,12 +104,11 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> {
 
       if (res.statusCode == 200) {
         final body = jsonDecode(res.body);
-        List<dynamic> rawList = [];
-        if (body is List) {
-          rawList = body;
-        } else if (body is Map && body['answers'] is List) {
-          rawList = body['answers'];
-        }
+        final rawList = (body is List)
+            ? body
+            : (body is Map && body['answers'] is List)
+                ? body['answers']
+                : <dynamic>[];
 
         final parsed = rawList
             .whereType<Map<String, dynamic>>()
@@ -109,10 +116,9 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> {
             .toList();
 
         setState(() {
-          answers = parsed;
-          answers.sort((a, b) => (b.votes ?? 0).compareTo(a.votes ?? 0));
+          answers = parsed..sort((a, b) => (b.votes).compareTo(a.votes));
         });
-      } else if (res.statusCode == 404 || res.statusCode == 405) {
+      } else if (res.statusCode == 404) {
         setState(() => answers = []);
       } else {
         throw Exception("Answers fetch failed: ${res.statusCode} ${res.body}");
@@ -124,10 +130,13 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> {
   }
 
   Future<void> _loadMyVote() async {
-    final res = await http.get(Uri.parse(_api("/questions/$currentDate/vote")), headers: await _headers());
+    final res = await http.get(
+      Uri.parse(_api("/questions/$currentDate/vote")),
+      headers: await _headers(),
+    );
     if (res.statusCode == 200) {
       setState(() => myVotedAnswerId = jsonDecode(res.body)["answerId"]);
-    } else if (res.statusCode == 204 || res.statusCode == 404) {
+    } else {
       setState(() => myVotedAnswerId = null);
     }
   }
@@ -135,16 +144,19 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> {
   Future<void> _submitAnswer() async {
     final text = _answerCtrl.text.trim();
     if (text.isEmpty) return;
+
     setState(() {
       posting = true;
       error = null;
     });
+
     try {
       final res = await http.post(
         Uri.parse(_api("/questions/$currentDate/answers")),
         headers: await _headers(),
         body: jsonEncode({"text": text}),
       );
+
       if (res.statusCode == 201) {
         _answerCtrl.clear();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -173,7 +185,10 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> {
   }
 
   Future<void> _unvote() async {
-    final res = await http.delete(Uri.parse(_api("/questions/$currentDate/vote")), headers: await _headers());
+    final res = await http.delete(
+      Uri.parse(_api("/questions/$currentDate/vote")),
+      headers: await _headers(),
+    );
     if (res.statusCode == 200 || res.statusCode == 204) {
       setState(() => myVotedAnswerId = null);
       await _loadAnswers();
@@ -208,8 +223,7 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> {
         .where('status', isEqualTo: 'pending')
         .snapshots()
         .listen((snapshot) {
-      final count = snapshot.docs.length;
-      if (mounted) setState(() => _newChallengesCount = count.clamp(0, 99));
+      if (mounted) setState(() => _newChallengesCount = snapshot.docs.length.clamp(0, 99));
     });
   }
 
@@ -224,15 +238,15 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> {
           .build(),
     );
 
-    _socket!.onConnect((_) {
-      _socket!.emit('join-day', currentDate);
-      debugPrint("[SOCKET] Joined $currentDate");
-    });
-
-    _socket!.on('chat:request', (_) => setState(() => _newChallengesCount++));
-    _socket!.on('challenge:received', (_) => setState(() => _newChallengesCount++));
-    _socket!.on('answer:created', (_) => _loadAnswers());
-    _socket!.connect();
+    _socket!
+      ..onConnect((_) {
+        _socket!.emit('join-day', currentDate);
+        debugPrint("[SOCKET] Joined $currentDate");
+      })
+      ..on('chat:request', (_) => setState(() => _newChallengesCount++))
+      ..on('challenge:received', (_) => setState(() => _newChallengesCount++))
+      ..on('answer:created', (_) => _loadAnswers())
+      ..connect();
   }
 
   // ---------- Colors ----------
@@ -240,7 +254,12 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> {
     final r = (255 - color.red) * 0.85 + 30;
     final g = (255 - color.green) * 0.85 + 30;
     final b = (255 - color.blue) * 0.85 + 30;
-    return Color.fromARGB(255, r.clamp(0, 255).toInt(), g.clamp(0, 255).toInt(), b.clamp(0, 255).toInt());
+    return Color.fromARGB(
+      255,
+      r.clamp(0, 255).toInt(),
+      g.clamp(0, 255).toInt(),
+      b.clamp(0, 255).toInt(),
+    );
   }
 
   Color _getReadableTextColor(Color bg) {
@@ -255,15 +274,18 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> {
 
   Future<void> _checkAdminClaim() async {
     final res = await FirebaseAuth.instance.currentUser?.getIdTokenResult(true);
-    setState(() => isAdmin = (res?.claims?['admin'] == true));
+    setState(() => isAdmin = res?.claims?['admin'] == true);
   }
 
   Future<void> _getWinner({bool silent = false}) async {
     try {
-      final res = await http.get(Uri.parse(_api("/questions/$currentDate/winner")), headers: await _headers());
+      final res = await http.get(
+        Uri.parse(_api("/questions/$currentDate/winner")),
+        headers: await _headers(),
+      );
       if (res.statusCode == 200) {
         setState(() => winner = jsonDecode(res.body));
-      } else if (res.statusCode == 404) {
+      } else {
         setState(() => winner = null);
       }
     } catch (_) {}
@@ -274,6 +296,7 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     if (loading) return const Center(child: CircularProgressIndicator());
+
     final user = FirebaseAuth.instance.currentUser;
     final hasAnswered = answers.any((a) => a.userId == user?.uid);
 
@@ -299,11 +322,14 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> {
             hasAnswered ? _buildAlreadyAnsweredNotice() : _buildAnswerInput(theme),
             const SizedBox(height: 8),
             Expanded(
-              child: ListView(
-                children: answers.isEmpty
-                    ? [const Center(child: Padding(padding: EdgeInsets.all(16), child: Text("Be the first to answer!")))]
-                    : answers.map((a) => _buildAnswerTile(context, a)).toList(),
-              ),
+              child: answers.isEmpty
+                  ? const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Text("Be the first to answer!"),
+                      ),
+                    )
+                  : ListView(children: answers.map((a) => _buildAnswerTile(context, a)).toList()),
             ),
           ],
         ),
@@ -315,8 +341,8 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> {
     return AppBar(
       elevation: 0,
       backgroundColor: Colors.transparent,
-      flexibleSpace: Container(
-        decoration: const BoxDecoration(
+      flexibleSpace: const DecoratedBox(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [Color(0xFF00BFA5), Color(0xFF009688)],
             begin: Alignment.topLeft,
@@ -339,7 +365,6 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> {
               icon: const Icon(Icons.mail_outline),
               onPressed: () {
                 setState(() => _newChallengesCount = 0);
-                // ✅ Updated navigation to open combined page
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const AllDebateRequestsPage()),
@@ -352,19 +377,12 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> {
                 top: 8,
                 child: Container(
                   padding: const EdgeInsets.all(4),
-                  decoration: const BoxDecoration(
-                    color: Colors.red,
-                    shape: BoxShape.circle,
-                  ),
+                  decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
                   constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
                   child: Center(
                     child: Text(
                       _newChallengesCount > 9 ? '9+' : '$_newChallengesCount',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),
@@ -393,11 +411,7 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: theme.colorScheme.primary.withOpacity(0.4)),
         boxShadow: [
-          BoxShadow(
-            color: Colors.tealAccent.withOpacity(0.25),
-            blurRadius: 25,
-            offset: const Offset(0, 6),
-          ),
+          BoxShadow(color: Colors.tealAccent.withOpacity(0.25), blurRadius: 25, offset: const Offset(0, 6)),
         ],
       ),
       child: Column(
@@ -430,10 +444,7 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.green.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-      ),
+      decoration: BoxDecoration(color: Colors.green.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
       child: const Text(
         "✅ You’ve already submitted your answer for today.",
         style: TextStyle(color: Colors.green, fontWeight: FontWeight.w600),
@@ -503,19 +514,36 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: outlineColor, width: a.isPremium ? 2.0 : 0.8),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 4)),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
         ],
       ),
       child: ListTile(
+        // ✅ Title
         title: a.isPremium
             ? _buildPremiumText(a)
-            : Text(a.text, style: TextStyle(color: textColor, fontWeight: FontWeight.w500)),
+            : Text(
+                a.text,
+                style: TextStyle(
+                  color: textColor,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+
+        // ✅ Subtitle
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               "by ${a.displayName ?? 'Anonymous'} • ${a.votes} vote${a.votes == 1 ? '' : 's'}",
-              style: TextStyle(color: complementary, fontSize: 13, fontWeight: FontWeight.w500),
+              style: TextStyle(
+                color: complementary,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
             ),
             if (isMine && !a.isPremium)
               TextButton.icon(
@@ -526,6 +554,8 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> {
               ),
           ],
         ),
+
+        // ✅ On Tap
         onTap: () => Navigator.push(
           context,
           MaterialPageRoute(
@@ -536,24 +566,28 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> {
             ),
           ),
         ),
+
+        // ✅ Trailing button
         trailing: isVoted
             ? OutlinedButton.icon(
                 icon: Icon(Icons.check, color: complementary),
                 label: Text("Voted", style: TextStyle(color: complementary)),
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: complementary),
-                ),
+                style: OutlinedButton.styleFrom(side: BorderSide(color: complementary)),
                 onPressed: _unvote,
               )
             : FilledButton.icon(
                 icon: const Icon(Icons.how_to_vote),
                 label: const Text("Vote"),
-                style: FilledButton.styleFrom(backgroundColor: complementary),
+                style: FilledButton.styleFrom(
+                  backgroundColor: complementary,
+                  foregroundColor: _getReadableTextColor(complementary),
+                ),
                 onPressed: isMine ? null : () => _vote(a.id),
               ),
       ),
     );
   }
+
 
   // ---------- Upgrade / Premium ----------
   Future<void> _upgradeAnswer(Answer a) async {
@@ -569,8 +603,9 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> {
     );
 
     if (result == true) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("✅ Premium style applied!")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("✅ Premium style applied!")),
+      );
       await _loadAnswers();
     }
   }
@@ -578,9 +613,11 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> {
   Widget _buildPremiumText(Answer a) {
     final style = a.premiumStyle ?? {};
     final textColor = Color(
-        int.tryParse(style['textColor']?.replaceAll('#', '0xff') ?? '') ?? 0xFFFFFFFF);
+      int.tryParse(style['textColor']?.replaceAll('#', '0xff') ?? '') ?? 0xFFFFFFFF,
+    );
     final glowColor = Color(
-        int.tryParse(style['glowColor']?.replaceAll('#', '0xff') ?? '') ?? 0x00000000);
+      int.tryParse(style['glowColor']?.replaceAll('#', '0xff') ?? '') ?? 0x00000000,
+    );
     final bold = style['bold'] == true;
     final italic = style['italic'] == true;
     final hasShadow = style['shadow'] == true;
@@ -643,8 +680,7 @@ class Answer {
       votes: (json["votes"] as num?)?.toInt() ?? 0,
       displayName: json["displayName"],
       isPremium: json["isPremium"] ?? false,
-      premiumStyle: json["premiumStyle"] ?? {},
+      premiumStyle: (json["premiumStyle"] as Map<String, dynamic>?) ?? {},
     );
   }
 }
-

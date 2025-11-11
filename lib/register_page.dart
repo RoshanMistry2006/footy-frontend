@@ -64,13 +64,12 @@ class _RegisterPageState extends State<RegisterPage> {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("✅ Account created! Please sign in.")),
-        );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("✅ Account created! Please sign in.")),
+      );
 
-        Navigator.pushReplacementNamed(context, '/login');
-      }
+      Navigator.pushReplacementNamed(context, '/login');
     } on FirebaseAuthException catch (e) {
       String message = e.message ?? 'Registration failed.';
       if (e.code == 'email-already-in-use') {
@@ -94,159 +93,162 @@ class _RegisterPageState extends State<RegisterPage> {
     final theme = Theme.of(context);
     final primary = theme.colorScheme.primary;
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  const Icon(Icons.sports_soccer, size: 70, color: Color(0xFF00BFA5)),
-                  const SizedBox(height: 12),
-                  Text(
-                    "Create your BallTalk account",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                      color: primary,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 30),
-
-                  // ⚠️ Error text
-                  if (_error != null)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: Text(
-                        _error!,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(color: Colors.redAccent, fontSize: 14),
-                      ),
-                    ),
-
-                  // 🧑 Display Name
-                  TextFormField(
-                    controller: _displayNameCtrl,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: _inputDecoration(
-                      "Display name",
-                      Icons.person_outline,
-                      theme,
-                    ),
-                    validator: (v) =>
-                        v == null || v.isEmpty ? "Required" : null,
-                  ),
-                  const SizedBox(height: 16),
-
-                  // ⚽ Team
-                  TextFormField(
-                    controller: _teamCtrl,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: _inputDecoration(
-                      "Favorite team",
-                      Icons.shield_outlined,
-                      theme,
-                    ),
-                    validator: (v) =>
-                        v == null || v.isEmpty ? "Required" : null,
-                  ),
-                  const SizedBox(height: 16),
-
-                  // 📧 Email
-                  TextFormField(
-                    controller: _emailCtrl,
-                    keyboardType: TextInputType.emailAddress,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: _inputDecoration(
-                      "Email",
-                      Icons.email_outlined,
-                      theme,
-                    ),
-                    validator: (v) =>
-                        v != null && v.contains("@") ? null : "Invalid email",
-                  ),
-                  const SizedBox(height: 16),
-
-                  // 🔒 Password
-                  TextFormField(
-                    controller: _passwordCtrl,
-                    obscureText: true,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: _inputDecoration(
-                      "Password",
-                      Icons.lock_outline,
-                      theme,
-                    ),
-                    validator: (v) =>
-                        v != null && v.length >= 6 ? null : "Min 6 characters",
-                  ),
-                  const SizedBox(height: 16),
-
-                  // 🔁 Confirm Password
-                  TextFormField(
-                    controller: _confirmCtrl,
-                    obscureText: true,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: _inputDecoration(
-                      "Confirm password",
-                      Icons.lock,
-                      theme,
-                    ),
-                    validator: (v) =>
-                        v == _passwordCtrl.text ? null : "Passwords don’t match",
-                  ),
-                  const SizedBox(height: 30),
-
-                  // 🚀 Register Button
-                  FilledButton(
-                    onPressed: _loading ? null : _register,
-                    style: FilledButton.styleFrom(
-                      minimumSize: const Size.fromHeight(50),
-                      backgroundColor: primary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
-                    child: _loading
-                        ? const SizedBox(
-                            height: 22,
-                            width: 22,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Text(
-                            "Create Account",
-                            style: TextStyle(fontSize: 18, color: Colors.white),
-                          ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // 🔙 Go to login
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (_) => const SignInPage()),
-                      );
-                    },
-                    child: Text(
-                      "Already have an account? Sign in",
+    // ✅ iOS fix: tap outside to dismiss keyboard
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      behavior: HitTestBehavior.translucent,
+      child: Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        body: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.sports_soccer, size: 70, color: Color(0xFF00BFA5)),
+                    const SizedBox(height: 12),
+                    Text(
+                      "Create your BallTalk account",
+                      textAlign: TextAlign.center,
                       style: TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
                         color: primary,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.5,
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 30),
+
+                    // ⚠️ Error text
+                    if (_error != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Text(
+                          _error!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: Colors.redAccent, fontSize: 14),
+                        ),
+                      ),
+
+                    // 🧑 Display Name
+                    TextFormField(
+                      controller: _displayNameCtrl,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: _inputDecoration(
+                        "Display name",
+                        Icons.person_outline,
+                        theme,
+                      ),
+                      validator: (v) => v == null || v.isEmpty ? "Required" : null,
+                    ),
+                    const SizedBox(height: 16),
+
+                    // ⚽ Team
+                    TextFormField(
+                      controller: _teamCtrl,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: _inputDecoration(
+                        "Favorite team",
+                        Icons.shield_outlined,
+                        theme,
+                      ),
+                      validator: (v) => v == null || v.isEmpty ? "Required" : null,
+                    ),
+                    const SizedBox(height: 16),
+
+                    // 📧 Email
+                    TextFormField(
+                      controller: _emailCtrl,
+                      keyboardType: TextInputType.emailAddress,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: _inputDecoration(
+                        "Email",
+                        Icons.email_outlined,
+                        theme,
+                      ),
+                      validator: (v) =>
+                          v != null && v.contains("@") ? null : "Invalid email",
+                    ),
+                    const SizedBox(height: 16),
+
+                    // 🔒 Password
+                    TextFormField(
+                      controller: _passwordCtrl,
+                      obscureText: true,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: _inputDecoration(
+                        "Password",
+                        Icons.lock_outline,
+                        theme,
+                      ),
+                      validator: (v) =>
+                          v != null && v.length >= 6 ? null : "Min 6 characters",
+                    ),
+                    const SizedBox(height: 16),
+
+                    // 🔁 Confirm Password
+                    TextFormField(
+                      controller: _confirmCtrl,
+                      obscureText: true,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: _inputDecoration(
+                        "Confirm password",
+                        Icons.lock,
+                        theme,
+                      ),
+                      validator: (v) =>
+                          v == _passwordCtrl.text ? null : "Passwords don’t match",
+                    ),
+                    const SizedBox(height: 30),
+
+                    // 🚀 Register Button
+                    FilledButton(
+                      onPressed: _loading ? null : _register,
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size.fromHeight(50),
+                        backgroundColor: primary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: _loading
+                          ? const SizedBox(
+                              height: 22,
+                              width: 22,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text(
+                              "Create Account",
+                              style: TextStyle(fontSize: 18, color: Colors.white),
+                            ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // 🔙 Go to login
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (_) => const SignInPage()),
+                        );
+                      },
+                      child: Text(
+                        "Already have an account? Sign in",
+                        style: TextStyle(
+                          color: primary,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -256,8 +258,7 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   /// 🔧 Shared input decoration
-  InputDecoration _inputDecoration(
-      String label, IconData icon, ThemeData theme) {
+  InputDecoration _inputDecoration(String label, IconData icon, ThemeData theme) {
     return InputDecoration(
       labelText: label,
       labelStyle: const TextStyle(color: Colors.white70),

@@ -46,7 +46,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '685582539479',
     projectId: 'footy-backend-d4eb8',
     authDomain: 'footy-backend-d4eb8.firebaseapp.com',
-    storageBucket: 'footy-backend-d4eb8.firebasestorage.app',
+    storageBucket: 'footy-backend-d4eb8.appspot.com',
     measurementId: 'G-VRB9FTLKNP',
   );
 
@@ -55,7 +55,7 @@ class DefaultFirebaseOptions {
     appId: '1:685582539479:android:827b1362ad117d2e102e92',
     messagingSenderId: '685582539479',
     projectId: 'footy-backend-d4eb8',
-    storageBucket: 'footy-backend-d4eb8.firebasestorage.app',
+    storageBucket: 'footy-backend-d4eb8.appspot.com',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
@@ -63,7 +63,7 @@ class DefaultFirebaseOptions {
     appId: '1:685582539479:ios:d14898cef2619edc102e92',
     messagingSenderId: '685582539479',
     projectId: 'footy-backend-d4eb8',
-    storageBucket: 'footy-backend-d4eb8.firebasestorage.app',
+    storageBucket: 'footy-backend-d4eb8.appspot.com',
     iosBundleId: 'com.example.footyFrontend',
   );
 
@@ -72,7 +72,7 @@ class DefaultFirebaseOptions {
     appId: '1:685582539479:ios:d14898cef2619edc102e92',
     messagingSenderId: '685582539479',
     projectId: 'footy-backend-d4eb8',
-    storageBucket: 'footy-backend-d4eb8.firebasestorage.app',
+    storageBucket: 'footy-backend-d4eb8.appspot.com',
     iosBundleId: 'com.example.footyFrontend',
   );
 
@@ -82,8 +82,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '685582539479',
     projectId: 'footy-backend-d4eb8',
     authDomain: 'footy-backend-d4eb8.firebaseapp.com',
-    storageBucket: 'footy-backend-d4eb8.firebasestorage.app',
+    storageBucket: 'footy-backend-d4eb8.appspot.com',
     measurementId: 'G-1YNBM986DD',
   );
-
 }

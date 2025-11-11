@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // ✅ for haptic feedback
 import '../services/chat_service.dart';
 
 class DebateRequestButton extends StatefulWidget {
   final String toUid;
   final String topic;
-  final String commentText; // ✅ new field for the challenged comment
+  final String commentText;
 
   const DebateRequestButton({
     super.key,
@@ -21,20 +22,24 @@ class _DebateRequestButtonState extends State<DebateRequestButton> {
   bool _sending = false;
 
   Future<void> _send() async {
+    FocusScope.of(context).unfocus(); // ✅ hides keyboard before showing SnackBars (iOS fix)
+    HapticFeedback.lightImpact(); // ✅ subtle vibration for iOS
+
     setState(() => _sending = true);
     try {
-      await ChatService()
-          .sendRequest(widget.toUid, widget.topic, widget.commentText); // ✅ 3 args
+      await ChatService().sendRequest(widget.toUid, widget.topic, widget.commentText);
 
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("✅ Debate request sent!")),
       );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("❌ Error: $e")),
       );
     } finally {
-      setState(() => _sending = false);
+      if (mounted) setState(() => _sending = false);
     }
   }
 
@@ -56,4 +61,5 @@ class _DebateRequestButtonState extends State<DebateRequestButton> {
     );
   }
 }
+
 
