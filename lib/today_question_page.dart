@@ -102,13 +102,22 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> {
         headers: await _headers(),
       );
 
+      debugPrint("📦 Answers API response (${res.statusCode}): ${res.body}");
+
       if (res.statusCode == 200) {
         final body = jsonDecode(res.body);
-        final rawList = (body is List)
-            ? body
-            : (body is Map && body['answers'] is List)
-                ? body['answers']
-                : <dynamic>[];
+
+        // 🧩 Accept any shape (List, Map with 'answers', or single object)
+        List<dynamic> rawList;
+        if (body is List) {
+          rawList = body;
+        } else if (body is Map && body['answers'] is List) {
+          rawList = body['answers'];
+        } else if (body is Map) {
+          rawList = [body]; // backend returned single answer
+        } else {
+          rawList = [];
+        }
 
         final parsed = rawList
             .whereType<Map<String, dynamic>>()
@@ -118,7 +127,7 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> {
         setState(() {
           answers = parsed..sort((a, b) => (b.votes).compareTo(a.votes));
         });
-      } else if (res.statusCode == 404) {
+      } else if (res.statusCode == 404 || res.statusCode == 405) {
         setState(() => answers = []);
       } else {
         throw Exception("Answers fetch failed: ${res.statusCode} ${res.body}");
@@ -128,6 +137,7 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> {
       setState(() => error = e.toString());
     }
   }
+
 
   Future<void> _loadMyVote() async {
     final res = await http.get(
@@ -157,21 +167,33 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> {
         body: jsonEncode({"text": text}),
       );
 
-      if (res.statusCode == 201) {
-        _answerCtrl.clear();
+      debugPrint("📤 POST /questions/$currentDate/answers → ${res.statusCode}");
+      debugPrint("Response: ${res.body}");
+
+      if (res.statusCode == 200 || res.statusCode == 201 || res.statusCode == 204) {
+        setState(() {
+          _answerCtrl.clear(); // immediately clear
+        });
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("✅ Answer submitted!")),
         );
+
         await _loadAnswers();
+        setState(() {}); // 👈 force UI rebuild so answer list updates
       } else {
+        debugPrint("❌ Post failed: ${res.statusCode} - ${res.body}");
         setState(() => error = "Post failed: ${res.statusCode} ${res.body}");
       }
     } catch (e) {
+      debugPrint("💥 Network error: $e");
       setState(() => error = "Network error: $e");
     } finally {
       if (mounted) setState(() => posting = false);
     }
   }
+
+
 
   Future<void> _vote(String answerId) async {
     final res = await http.post(

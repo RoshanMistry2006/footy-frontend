@@ -9,11 +9,24 @@ import 'pages/all_debate_requests_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+
+  try {
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    } else {
+      Firebase.app(); // just use existing app
+    }
+  } catch (e) {
+    // ✅ Catch "duplicate app" or any race condition from auto-init
+    debugPrint('Firebase already initialized: $e');
+  }
+
   runApp(const MyApp());
 }
+
+
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});

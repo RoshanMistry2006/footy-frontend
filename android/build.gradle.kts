@@ -3,13 +3,11 @@ import org.gradle.api.tasks.Delete
 import org.gradle.api.file.Directory
 
 plugins {
-    // Core Android + Kotlin build plugins
-    id("com.android.application") version "8.5.1" apply false
-    id("org.jetbrains.kotlin.android") version "1.9.0" apply false
-
-    // ✅ Firebase / Google services plugin (required for google-services.json)
-    id("com.google.gms.google-services") version "4.4.2" apply false
+    id("com.android.application") apply false
+    id("org.jetbrains.kotlin.android") apply false
+    id("com.google.gms.google-services") apply false
 }
+
 
 allprojects {
     repositories {
