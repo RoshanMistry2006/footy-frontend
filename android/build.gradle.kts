@@ -1,3 +1,16 @@
+import org.gradle.api.initialization.resolve.RepositoriesMode
+import org.gradle.api.tasks.Delete
+import org.gradle.api.file.Directory
+
+plugins {
+    // Core Android + Kotlin build plugins
+    id("com.android.application") version "8.5.1" apply false
+    id("org.jetbrains.kotlin.android") version "1.9.0" apply false
+
+    // ✅ Firebase / Google services plugin (required for google-services.json)
+    id("com.google.gms.google-services") version "4.4.2" apply false
+}
+
 allprojects {
     repositories {
         google()
@@ -5,6 +18,7 @@ allprojects {
     }
 }
 
+// Optional: keep your custom build folder structure
 val newBuildDir: Directory =
     rootProject.layout.buildDirectory
         .dir("../../build")
@@ -14,11 +28,10 @@ rootProject.layout.buildDirectory.value(newBuildDir)
 subprojects {
     val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
     project.layout.buildDirectory.value(newSubprojectBuildDir)
-}
-subprojects {
     project.evaluationDependsOn(":app")
 }
 
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }
+

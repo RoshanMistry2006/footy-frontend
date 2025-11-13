@@ -1,10 +1,9 @@
 plugins {
     id("com.android.application")
-    // START: FlutterFire Configuration
+    // ✅ Firebase / Google services plugin
     id("com.google.gms.google-services")
-    // END: FlutterFire Configuration
     id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+    // ✅ Flutter plugin (must come last)
     id("dev.flutter.flutter-gradle-plugin")
 }
 
@@ -22,21 +21,34 @@ android {
         jvmTarget = JavaVersion.VERSION_11.toString()
     }
 
+    // ✅ Add debug signing config so builds never fail for missing keystore
+    signingConfigs {
+        getByName("debug") {
+            storeFile = file(
+                System.getenv("ANDROID_DEBUG_KEYSTORE")
+                    ?: "${System.getProperty("user.home")}/.android/debug.keystore"
+            )
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
+        // ✅ Must match your Firebase package name
         applicationId = "com.balltalk.app"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        // ✅ Prevent Firebase method-limit issues
+        multiDexEnabled = true
     }
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
+            // ✅ Uses debug signing for now (fine for dev builds)
             signingConfig = signingConfigs.getByName("debug")
         }
     }
