@@ -67,13 +67,23 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> {
       loading = true;
       error = null;
     });
+
     try {
-      await Future.wait([
-        _loadQuestion(),
-        _loadAnswers(),
-        _loadMyVote(),
-        _getWinner(silent: true),
-      ]);
+      // Step 1: load question first
+      await _loadQuestion();
+
+      // Step 2: sequentially load vote -> answers (NOT in parallel)
+      await _loadMyVote();
+      await _loadAnswers();
+
+      // Step 3: print debugging info
+      debugPrint("🎯 After bootstrap: myVotedAnswerId=$myVotedAnswerId, answers=${answers.length}");
+
+      // Step 4: force one final rebuild after both are ready
+      if (mounted) setState(() {});
+
+      // Step 5: load winner and start countdown
+      await _getWinner(silent: true);
       _startCountdown();
     } catch (e, st) {
       debugPrint("💥 Bootstrap error: $e\n$st");
@@ -82,6 +92,8 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> {
       if (mounted) setState(() => loading = false);
     }
   }
+
+
 
   Future<void> _loadQuestion() async {
     final res = await http.get(
@@ -140,16 +152,36 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> {
 
 
   Future<void> _loadMyVote() async {
-    final res = await http.get(
-      Uri.parse(_api("/questions/$currentDate/vote")),
-      headers: await _headers(),
-    );
-    if (res.statusCode == 200) {
-      setState(() => myVotedAnswerId = jsonDecode(res.body)["answerId"]);
-    } else {
+    try {
+      final res = await http.get(
+        Uri.parse(_api("/questions/$currentDate/vote")),
+        headers: await _headers(),
+      );
+
+      debugPrint("📥 /vote response (${res.statusCode}): ${res.body}");
+
+      if (res.statusCode == 200 && res.body.isNotEmpty) {
+        final data = jsonDecode(res.body);
+        final id = data["answerId"]?.toString().trim();
+        
+        if (id != null && id.isNotEmpty) {
+          setState(() {
+            myVotedAnswerId = id;
+          });
+          debugPrint("✅ Loaded my vote → $myVotedAnswerId");
+        } else {
+          debugPrint("⚠️ No answerId found in response.");
+        }
+      } else {
+        debugPrint("⚠️ No vote found (${res.statusCode})");
+        setState(() => myVotedAnswerId = null);
+      }
+    } catch (e, st) {
+      debugPrint("💥 _loadMyVote error: $e\n$st");
       setState(() => myVotedAnswerId = null);
     }
   }
+
 
   Future<void> _submitAnswer() async {
     final text = _answerCtrl.text.trim();
@@ -516,7 +548,13 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> {
     final theme = Theme.of(context);
     final user = FirebaseAuth.instance.currentUser;
     final isMine = a.userId == user?.uid;
-    final isVoted = myVotedAnswerId == a.id;
+    final isVoted =
+      myVotedAnswerId != null &&
+      myVotedAnswerId!.toString().trim() == a.id.toString().trim();
+
+
+
+
 
     final bgColor = a.isPremium
         ? Color(int.tryParse(a.premiumStyle?['backgroundColor']?.replaceAll('#', '0xff') ?? '') ?? 0xFFFFF9C4)
