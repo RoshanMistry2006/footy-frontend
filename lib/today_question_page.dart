@@ -19,7 +19,7 @@ class TodayQuestionPage extends StatefulWidget {
   State<TodayQuestionPage> createState() => _TodayQuestionPageState();
 }
 
-class _TodayQuestionPageState extends State<TodayQuestionPage> {
+class _TodayQuestionPageState extends State<TodayQuestionPage> with SingleTickerProviderStateMixin {
   String? questionText;
   bool loading = true;
   String? error;
@@ -39,9 +39,20 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> {
 
   int _newChallengesCount = 0;
 
+  bool _hasNewAnswers = false;
+
+  late AnimationController _glowController;
+
+
+
+
   @override
   void initState() {
     super.initState();
+    _glowController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
     debugPrint("👤 Logged in user UID: ${FirebaseAuth.instance.currentUser?.uid}");
     _bootstrap();
     _connectSocket();
@@ -297,9 +308,26 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> {
         _socket!.emit('join-day', currentDate);
         debugPrint("[SOCKET] Joined $currentDate");
       })
-      ..on('chat:request', (_) => setState(() => _newChallengesCount++))
-      ..on('challenge:received', (_) => setState(() => _newChallengesCount++))
-      ..on('answer:created', (_) => _loadAnswers())
+      ..onReconnect((_) {
+        _socket!.emit('join-day', currentDate);
+        debugPrint("[SOCKET] Rejoined $currentDate after reconnect");
+      })
+      ..on('chat:request', (_) {
+        if (mounted) setState(() => _newChallengesCount++);
+      })
+      ..on('challenge:received', (_) {
+        if (mounted) setState(() => _newChallengesCount++);
+      })
+      // 🟢 Show refresh banner instead of live update
+      ..on('answer:created', (_) {
+        debugPrint("🟢 New answer detected — refresh banner shown");
+        if (mounted && !_hasNewAnswers) {
+          setState(() => _hasNewAnswers = true);
+        }
+      })
+      ..onDisconnect((_) {
+        debugPrint("[SOCKET] Disconnected from server");
+      })
       ..connect();
   }
 
@@ -357,36 +385,103 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: _buildAppBar(),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            const Text(
-              "Today's Question",
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+      body: Stack(
+        children: [
+          // 🧱 Main content
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const Text(
+                  "Today's Question",
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _buildQuestionCard(theme),
+                const SizedBox(height: 12),
+                hasAnswered
+                    ? _buildAlreadyAnsweredNotice()
+                    : _buildAnswerInput(theme),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: answers.isEmpty
+                      ? const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Text("Be the first to answer!"),
+                          ),
+                        )
+                      : ListView(
+                          children: answers
+                              .map((a) => _buildAnswerTile(context, a))
+                              .toList(),
+                        ),
+                ),
+              ],
+            ),
+          ),
+
+          // 🟢 Floating banner for new answers
+          if (_hasNewAnswers)
+            Positioned(
+              top: 15,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: GestureDetector(
+                  onTap: () async {
+                    await _loadAnswers();
+                    if (mounted) setState(() => _hasNewAnswers = false);
+                  },
+                  child: AnimatedBuilder(
+                    animation: _glowController,
+                    builder: (context, child) {
+                      // Pulsing glow animation (range 0.6–1.0)
+                      final glowOpacity = 0.6 + (_glowController.value * 0.4);
+                      final scale = 1 + (_glowController.value * 0.02);
+
+                      return Transform.scale(
+                        scale: scale,
+                        child: Opacity(
+                          opacity: glowOpacity,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 22,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.tealAccent.withOpacity(0.95),
+                              borderRadius: BorderRadius.circular(22),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.tealAccent.withOpacity(0.6),
+                                  blurRadius: 25 * glowOpacity,
+                                  spreadRadius: 4,
+                                ),
+                              ],
+                            ),
+                            child: const Text(
+                              "🔄 New answers available – Tap to refresh",
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
               ),
             ),
-            const SizedBox(height: 12),
-            _buildQuestionCard(theme),
-            const SizedBox(height: 12),
-            hasAnswered ? _buildAlreadyAnsweredNotice() : _buildAnswerInput(theme),
-            const SizedBox(height: 8),
-            Expanded(
-              child: answers.isEmpty
-                  ? const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Text("Be the first to answer!"),
-                      ),
-                    )
-                  : ListView(children: answers.map((a) => _buildAnswerTile(context, a)).toList()),
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -573,13 +668,26 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> {
         color: bgColor,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: outlineColor, width: a.isPremium ? 2.0 : 0.8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: a.isPremium && (a.premiumStyle?['shadow'] == true)
+            ? [
+                BoxShadow(
+                  color: Color(
+                        int.tryParse(
+                                a.premiumStyle?['glowColor']?.replaceAll('#', '0xff') ??
+                                    '') ??
+                            Colors.tealAccent.value)
+                      .withOpacity(0.45),
+                  blurRadius: 25,
+                  spreadRadius: 3,
+                ),
+              ]
+            : [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
       ),
       child: ListTile(
         // ✅ Title
@@ -704,6 +812,7 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> {
 
   @override
   void dispose() {
+    _glowController.dispose();
     _countdownTimer?.cancel();
     _socket?.emit('leave-day', currentDate);
     _socket?.dispose();

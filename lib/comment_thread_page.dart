@@ -29,6 +29,8 @@ class _CommentThreadPageState extends State<CommentThreadPage> {
   String? error;
   IO.Socket? _socket;
 
+  bool _hasNewComments = false; // 🟢 NEW FEATURE
+
   final _controller = TextEditingController();
   String? replyingTo;
   String? replyingToName;
@@ -123,8 +125,10 @@ class _CommentThreadPageState extends State<CommentThreadPage> {
           replyingTo = null;
           replyingToName = null;
         });
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text("✅ Comment posted!")));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text("✅ Comment posted!"),
+          backgroundColor: Colors.teal,
+        ));
         await _loadComments();
       } else {
         final bodyData = jsonDecode(res.body);
@@ -156,9 +160,10 @@ class _CommentThreadPageState extends State<CommentThreadPage> {
       debugPrint("🟢 Joined thread for ${widget.answerId}");
     });
 
+    // 🟢 Instead of auto-inserting, show the "new comments" banner
     _socket!.on('comment:created', (data) {
-      final c = Comment.fromJson(Map<String, dynamic>.from(data));
-      if (mounted) setState(() => comments.add(c));
+      if (mounted) setState(() => _hasNewComments = true);
+      debugPrint("💬 New comment detected — banner shown.");
     });
 
     _socket!.on('comment:deleted', (data) {
@@ -185,124 +190,194 @@ class _CommentThreadPageState extends State<CommentThreadPage> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: const Color(0xFF0B0D10),
       appBar: AppBar(
-        backgroundColor: theme.colorScheme.primary,
+        backgroundColor: const Color(0xFF00BFA5),
         title: const Text(
           "Discussion",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.5,
+          ),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: loading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                Container(
-                  width: double.infinity,
-                  color: theme.colorScheme.surface,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  child: Row(
-                    children: [
-                      Icon(Icons.chat_bubble_outline,
-                          color: theme.colorScheme.primary),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          widget.answerText,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: Colors.white,
+      body: Stack(
+        children: [
+          // 🧱 Main content
+          loading
+              ? const Center(
+                  child: CircularProgressIndicator(color: Colors.tealAccent))
+              : Column(
+                  children: [
+                    // Header
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF00BFA5), Color(0xFF00796B)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.tealAccent.withOpacity(0.4),
+                            blurRadius: 10,
+                            spreadRadius: 1,
                           ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.forum, color: Colors.white),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              widget.answerText,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Comments
+                    Expanded(
+                      child: comments.isEmpty
+                          ? const Center(
+                              child: Text(
+                                "No comments yet — start the discussion!",
+                                style: TextStyle(color: Colors.white54),
+                              ),
+                            )
+                          : ListView(
+                              padding: const EdgeInsets.all(12),
+                              children: _buildThread(comments),
+                            ),
+                    ),
+
+                    _buildInput(theme),
+                  ],
+                ),
+
+          // 🟢 Floating banner for new comments
+          if (_hasNewComments)
+            Positioned(
+              top: 15,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: GestureDetector(
+                  onTap: () async {
+                    await _loadComments();
+                    if (mounted) setState(() => _hasNewComments = false);
+                  },
+                  child: AnimatedOpacity(
+                    opacity: _hasNewComments ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 400),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.tealAccent,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.tealAccent.withOpacity(0.5),
+                            blurRadius: 10,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                      child: const Text(
+                        "💬 New comments available – Tap to refresh",
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                    ],
+                    ),
                   ),
                 ),
-                const Divider(height: 1, color: Colors.grey),
-                Expanded(
-                  child: comments.isEmpty
-                      ? const Center(
-                          child: Text(
-                            "No comments yet — start the discussion!",
-                            style: TextStyle(color: Colors.white54),
-                          ),
-                        )
-                      : ListView(
-                          padding: const EdgeInsets.all(12),
-                          children: _buildThread(comments),
-                        ),
-                ),
-                _buildInput(theme),
-              ],
+              ),
             ),
+        ],
+      ),
     );
   }
 
   // ---------- INPUT ----------
   Widget _buildInput(ThemeData theme) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (replyingToName != null)
-          Container(
-            color: theme.colorScheme.primary.withOpacity(0.15),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    "Replying to @$replyingToName",
-                    style: TextStyle(
-                      color: theme.colorScheme.primary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF111418),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, -3),
+          )
+        ],
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _controller,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: replyingTo == null
+                    ? "Write a comment..."
+                    : "Replying to @$replyingToName",
+                hintStyle: const TextStyle(color: Colors.white54),
+                filled: true,
+                fillColor: const Color(0xFF1A1D21),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  borderSide: BorderSide.none,
                 ),
-                IconButton(
-                  icon: const Icon(Icons.close, size: 18, color: Colors.white70),
-                  onPressed: () =>
-                      setState(() => {replyingTo = null, replyingToName = null}),
-                ),
-              ],
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              ),
             ),
           ),
-        Container(
-          color: theme.colorScheme.surface,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _controller,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: InputDecoration(
-                    hintText: replyingTo == null
-                        ? "Write a comment..."
-                        : "Replying...",
-                    hintStyle: const TextStyle(color: Colors.white54),
-                    filled: true,
-                    fillColor: theme.colorScheme.surface,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide.none,
-                    ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: _postComment,
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.tealAccent,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.tealAccent.withOpacity(0.5),
+                    blurRadius: 10,
+                    spreadRadius: 1,
                   ),
+                ],
+              ),
+              child: const Text(
+                "Post",
+                style: TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
                 ),
               ),
-              const SizedBox(width: 8),
-              FilledButton(
-                onPressed: _postComment,
-                style: FilledButton.styleFrom(
-                    backgroundColor: theme.colorScheme.primary),
-                child: const Text("Post"),
-              ),
-            ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -340,38 +415,44 @@ class _CommentThreadPageState extends State<CommentThreadPage> {
 
     final int cappedDepth = depth.clamp(0, 4);
     final double fontSize = (16 - cappedDepth * 1.4).clamp(10.0, 16.0);
-    final double avatarRadius = (18 - cappedDepth * 1.3).clamp(9.0, 16.0);
-    final double buttonFontSize = (13 - cappedDepth * 0.8).clamp(9.0, 13.0);
     final bool isMaxDepth = depth >= 3;
 
-    final bgColor =
-        Color.lerp(Colors.grey.shade900, Colors.grey.shade800, depth / 4);
-    final textColor = Colors.white.withOpacity(0.9);
+    final bgColor = const Color(0xFF14181C);
+    final borderGlow =
+        c.userId == currentUid ? Colors.tealAccent : Colors.amberAccent;
 
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      margin: const EdgeInsets.symmetric(vertical: 4),
+      duration: const Duration(milliseconds: 250),
+      margin: const EdgeInsets.symmetric(vertical: 6),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.grey.shade700, width: 0.8),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: borderGlow.withOpacity(0.4),
+          width: 1.4,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: borderGlow.withOpacity(0.15),
+            blurRadius: 12,
+            spreadRadius: 1,
+          ),
+        ],
       ),
       child: Padding(
-        padding: EdgeInsets.all((8 - cappedDepth * 1.2).clamp(3.0, 8.0)),
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Avatar + Name
             Row(
               children: [
                 CircleAvatar(
-                  radius: avatarRadius,
-                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  radius: 14,
+                  backgroundColor: borderGlow.withOpacity(0.9),
                   child: Text(
                     c.displayName?.substring(0, 1).toUpperCase() ?? "?",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: fontSize - 3,
+                    style: const TextStyle(
+                      color: Colors.black,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -380,108 +461,91 @@ class _CommentThreadPageState extends State<CommentThreadPage> {
                 Expanded(
                   child: Text(
                     c.displayName ?? "Anonymous",
-                    style: TextStyle(
-                      fontSize: fontSize - 1,
+                    style: const TextStyle(
+                      color: Colors.white,
                       fontWeight: FontWeight.bold,
-                      color: textColor,
+                      fontSize: 14,
                     ),
                   ),
                 ),
               ],
             ),
-
-            const SizedBox(height: 4),
-
-            // Text
-            Padding(
-              padding: const EdgeInsets.only(left: 8),
-              child: Text(
-                c.text,
-                style: TextStyle(
-                  fontSize: fontSize,
-                  height: 1.2,
-                  color: textColor,
-                ),
+            const SizedBox(height: 6),
+            Text(
+              c.text,
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.9),
+                fontSize: fontSize,
               ),
             ),
-
-            const SizedBox(height: 4),
-
-            // Reply + Challenge Buttons
-            Padding(
-              padding: const EdgeInsets.only(left: 8),
-              child: Row(
-                children: [
-                  if (!isMaxDepth)
-                    TextButton.icon(
-                      icon: Icon(Icons.reply,
-                          size: buttonFontSize + 1,
-                          color: Theme.of(context).colorScheme.primary),
-                      label: Text(
-                        "Reply",
-                        style: TextStyle(
-                            fontSize: buttonFontSize,
-                            color: Theme.of(context).colorScheme.primary),
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          replyingTo = c.id;
-                          replyingToName = c.displayName ?? "user";
-                        });
-                      },
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                if (!isMaxDepth)
+                  TextButton.icon(
+                    icon:
+                        const Icon(Icons.reply, color: Colors.tealAccent, size: 16),
+                    label: const Text(
+                      "Reply",
+                      style: TextStyle(color: Colors.tealAccent, fontSize: 13),
                     ),
-                  if (c.userId != currentUid)
-                    TextButton.icon(
-                      icon: Icon(
-                        Icons.sports_martial_arts,
+                    onPressed: () {
+                      setState(() {
+                        replyingTo = c.id;
+                        replyingToName = c.displayName ?? "user";
+                      });
+                    },
+                  ),
+                if (c.userId != currentUid)
+                  TextButton.icon(
+                    icon: Icon(
+                      Icons.sports_martial_arts,
+                      color: challengedUserIds.contains(c.userId)
+                          ? Colors.grey
+                          : Colors.amberAccent,
+                      size: 16,
+                    ),
+                    label: Text(
+                      challengedUserIds.contains(c.userId)
+                          ? "Challenged"
+                          : "Challenge",
+                      style: TextStyle(
                         color: challengedUserIds.contains(c.userId)
-                            ? Colors.grey.shade600
-                            : Colors.amber.shade700,
-                        size: buttonFontSize + 1,
+                            ? Colors.grey
+                            : Colors.amberAccent,
+                        fontSize: 13,
                       ),
-                      label: Text(
-                        challengedUserIds.contains(c.userId)
-                            ? "Challenged"
-                            : "Challenge",
-                        style: TextStyle(
-                          fontSize: buttonFontSize,
-                          color: challengedUserIds.contains(c.userId)
-                              ? Colors.grey.shade600
-                              : Colors.amber.shade700,
-                        ),
-                      ),
-                      onPressed: challengedUserIds.contains(c.userId)
-                          ? null
-                          : () async {
-                              try {
-                                await ChatService().sendRequest(
-                                  c.userId ?? "",
-                                  widget.answerText,
-                                  "",
-                                );
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text("✅ Challenge sent!")),
-                                );
-                                setState(() {
-                                  challengedUserIds.add(c.userId ?? "");
-                                });
-                              } catch (e) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text("❌ Error: $e")),
-                                );
-                              }
-                            },
                     ),
-                ],
-              ),
+                    onPressed: challengedUserIds.contains(c.userId)
+                        ? null
+                        : () async {
+                            try {
+                              await ChatService().sendRequest(
+                                c.userId ?? "",
+                                widget.answerText,
+                                "",
+                              );
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text("✅ Challenge sent!")),
+                              );
+                              setState(() {
+                                challengedUserIds.add(c.userId ?? "");
+                              });
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text("❌ Error: $e")),
+                              );
+                            }
+                          },
+                  ),
+              ],
             ),
-
-            // Replies
             if (hasReplies)
               AnimatedCrossFade(
                 firstChild: const SizedBox.shrink(),
                 secondChild: Padding(
-                  padding: const EdgeInsets.only(left: 8),
+                  padding: const EdgeInsets.only(left: 12),
                   child: Column(children: buildLevel(c.id, depth + 1)),
                 ),
                 crossFadeState: isExpanded
@@ -489,8 +553,6 @@ class _CommentThreadPageState extends State<CommentThreadPage> {
                     : CrossFadeState.showFirst,
                 duration: const Duration(milliseconds: 250),
               ),
-
-            // Toggle replies
             if (hasReplies)
               Align(
                 alignment: Alignment.centerRight,
@@ -506,10 +568,7 @@ class _CommentThreadPageState extends State<CommentThreadPage> {
                   },
                   child: Text(
                     isExpanded ? "Hide replies" : "View replies",
-                    style: TextStyle(
-                      fontSize: fontSize - 2,
-                      color: Colors.white70,
-                    ),
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
                   ),
                 ),
               ),

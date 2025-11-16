@@ -186,11 +186,22 @@ class _SignInPageState extends State<SignInPage> {
         );
       }
     } on FirebaseAuthException catch (e) {
-      setState(() => error = e.message);
-    } catch (e) {
-      setState(() => error = 'Unexpected error: $e');
-    } finally {
-      if (mounted) setState(() => loading = false);
+      String message;
+      switch (e.code) {
+        case 'user-not-found':
+        case 'wrong-password':
+          message = 'Email or password is incorrect.';
+          break;
+        case 'invalid-email':
+          message = 'Invalid email address.';
+          break;
+        case 'user-disabled':
+          message = 'This account has been disabled.';
+          break;
+        default:
+          message = 'Sign-in failed. Please try again.';
+      }
+      setState(() => error = message);
     }
   }
 
