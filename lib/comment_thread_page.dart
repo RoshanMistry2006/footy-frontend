@@ -184,7 +184,7 @@ class _CommentThreadPageState extends State<CommentThreadPage> {
     super.dispose();
   }
 
-  // ---------- UI ----------
+    // ---------- UI ----------
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -203,115 +203,130 @@ class _CommentThreadPageState extends State<CommentThreadPage> {
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: Stack(
-        children: [
-          // 🧱 Main content
-          loading
-              ? const Center(
-                  child: CircularProgressIndicator(color: Colors.tealAccent))
-              : Column(
-                  children: [
-                    // Header
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 12),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF00BFA5), Color(0xFF00796B)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.tealAccent.withOpacity(0.4),
-                            blurRadius: 10,
-                            spreadRadius: 1,
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.forum, color: Colors.white),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              widget.answerText,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+      body: loading
+          ? const Center(child: CircularProgressIndicator(color: Colors.tealAccent))
+          : Column(
+              children: [
+                // ---------- Header ----------
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF00BFA5), Color(0xFF00796B)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-
-                    // Comments
-                    Expanded(
-                      child: comments.isEmpty
-                          ? const Center(
-                              child: Text(
-                                "No comments yet — start the discussion!",
-                                style: TextStyle(color: Colors.white54),
-                              ),
-                            )
-                          : ListView(
-                              padding: const EdgeInsets.all(12),
-                              children: _buildThread(comments),
-                            ),
-                    ),
-
-                    _buildInput(theme),
-                  ],
-                ),
-
-          // 🟢 Floating banner for new comments
-          if (_hasNewComments)
-            Positioned(
-              top: 15,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: GestureDetector(
-                  onTap: () async {
-                    await _loadComments();
-                    if (mounted) setState(() => _hasNewComments = false);
-                  },
-                  child: AnimatedOpacity(
-                    opacity: _hasNewComments ? 1.0 : 0.0,
-                    duration: const Duration(milliseconds: 400),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: Colors.tealAccent,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.tealAccent.withOpacity(0.5),
-                            blurRadius: 10,
-                            spreadRadius: 2,
-                          ),
-                        ],
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.tealAccent.withOpacity(0.4),
+                        blurRadius: 10,
+                        spreadRadius: 1,
                       ),
-                      child: const Text(
-                        "💬 New comments available – Tap to refresh",
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontWeight: FontWeight.w600,
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.forum, color: Colors.white),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          widget.answerText,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
-              ),
+
+                // ---------- New Comments Banner (fade + slide-in) ----------
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 500),
+                  transitionBuilder: (child, animation) => SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0, 0.3),
+                      end: Offset.zero,
+                    ).animate(CurvedAnimation(
+                      parent: animation,
+                      curve: Curves.easeOutCubic,
+                    )),
+                    child: FadeTransition(opacity: animation, child: child),
+                  ),
+                  child: _hasNewComments
+                      ? Padding(
+                          key: const ValueKey('newCommentsBanner'),
+                          padding: const EdgeInsets.only(top: 10, bottom: 8),
+                          child: GestureDetector(
+                            onTap: () async {
+                              await _loadComments();
+                              if (mounted) setState(() => _hasNewComments = false);
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 20, vertical: 10),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(20),
+                                gradient: const LinearGradient(
+                                  colors: [Color(0xFF00BFA5), Color(0xFF00796B)],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.tealAccent.withOpacity(0.4),
+                                    blurRadius: 10,
+                                    spreadRadius: 1,
+                                  ),
+                                ],
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.chat_bubble_outline,
+                                      color: Colors.white, size: 18),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    "New comments available – Tap to refresh",
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        )
+                      : const SizedBox.shrink(),
+                ),
+
+                // ---------- Comments ----------
+                Expanded(
+                  child: comments.isEmpty
+                      ? const Center(
+                          child: Text(
+                            "No comments yet — start the discussion!",
+                            style: TextStyle(color: Colors.white54),
+                          ),
+                        )
+                      : ListView(
+                          padding: const EdgeInsets.all(12),
+                          children: _buildThread(comments),
+                        ),
+                ),
+
+                // ---------- Input ----------
+                _buildInput(theme),
+              ],
             ),
-        ],
-      ),
     );
   }
+
 
   // ---------- INPUT ----------
   Widget _buildInput(ThemeData theme) {

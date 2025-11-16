@@ -373,7 +373,6 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> with SingleTicker
     } catch (_) {}
   }
 
-  // ---------- UI ----------
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -385,106 +384,135 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> with SingleTicker
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: _buildAppBar(),
-      body: Stack(
-        children: [
-          // 🧱 Main content
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const Text(
-                  "Today's Question",
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                _buildQuestionCard(theme),
-                const SizedBox(height: 12),
-                hasAnswered
-                    ? _buildAlreadyAnsweredNotice()
-                    : _buildAnswerInput(theme),
-                const SizedBox(height: 8),
-                Expanded(
-                  child: answers.isEmpty
-                      ? const Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(16),
-                            child: Text("Be the first to answer!"),
-                          ),
-                        )
-                      : ListView(
-                          children: answers
-                              .map((a) => _buildAnswerTile(context, a))
-                              .toList(),
-                        ),
-                ),
-              ],
-            ),
-          ),
-
-          // 🟢 Floating banner for new answers
-          if (_hasNewAnswers)
-            Positioned(
-              top: 15,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: GestureDetector(
-                  onTap: () async {
-                    await _loadAnswers();
-                    if (mounted) setState(() => _hasNewAnswers = false);
-                  },
-                  child: AnimatedBuilder(
-                    animation: _glowController,
-                    builder: (context, child) {
-                      // Pulsing glow animation (range 0.6–1.0)
-                      final glowOpacity = 0.6 + (_glowController.value * 0.4);
-                      final scale = 1 + (_glowController.value * 0.02);
-
-                      return Transform.scale(
-                        scale: scale,
-                        child: Opacity(
-                          opacity: glowOpacity,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 22,
-                              vertical: 12,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.tealAccent.withOpacity(0.95),
-                              borderRadius: BorderRadius.circular(22),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.tealAccent.withOpacity(0.6),
-                                  blurRadius: 25 * glowOpacity,
-                                  spreadRadius: 4,
-                                ),
-                              ],
-                            ),
-                            child: const Text(
-                              "🔄 New answers available – Tap to refresh",
-                              style: TextStyle(
-                                color: Colors.black,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 15,
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const Text(
+              "Today's Question",
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
               ),
             ),
-        ],
+            const SizedBox(height: 12),
+
+            // 🏁 Question Card
+            _buildQuestionCard(theme),
+            const SizedBox(height: 12),
+
+            // ✅ Either answer input or submitted notice
+            hasAnswered
+                ? _buildAlreadyAnsweredNotice()
+                : _buildAnswerInput(theme),
+
+            // 🟢 Smooth “New answers available” banner (now below input)
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 500),
+              transitionBuilder: (child, animation) => SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0, 0.3),
+                  end: Offset.zero,
+                ).animate(CurvedAnimation(
+                  parent: animation,
+                  curve: Curves.easeOutCubic,
+                )),
+                child: FadeTransition(opacity: animation, child: child),
+              ),
+              child: _hasNewAnswers
+                  ? Padding(
+                      key: const ValueKey('newAnswersBanner'),
+                      padding: const EdgeInsets.only(top: 10, bottom: 10),
+                      child: GestureDetector(
+                        onTap: () async {
+                          await _loadAnswers();
+                          if (mounted) setState(() => _hasNewAnswers = false);
+                        },
+                        child: AnimatedBuilder(
+                          animation: _glowController,
+                          builder: (context, child) {
+                            final glowOpacity = 0.6 + (_glowController.value * 0.4);
+                            final scale = 1 + (_glowController.value * 0.02);
+
+                            return Transform.scale(
+                              scale: scale,
+                              child: Opacity(
+                                opacity: glowOpacity,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 22,
+                                    vertical: 12,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    gradient: const LinearGradient(
+                                      colors: [Color(0xFF00BFA5), Color(0xFF00796B)],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                    borderRadius: BorderRadius.circular(22),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.tealAccent.withOpacity(0.6),
+                                        blurRadius: 25 * glowOpacity,
+                                        spreadRadius: 3,
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.refresh,
+                                          color: Colors.white, size: 18),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        "New answers available – Tap to refresh",
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 15,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ),
+
+            const SizedBox(height: 8),
+
+            // 📋 Answers list
+            Expanded(
+              child: answers.isEmpty
+                  ? const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Text(
+                          "Be the first to answer!",
+                          style: TextStyle(color: Colors.white70),
+                        ),
+                      ),
+                    )
+                  : ListView(
+                      children: answers
+                          .map((a) => _buildAnswerTile(context, a))
+                          .toList(),
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }
+
 
   AppBar _buildAppBar() {
     return AppBar(
