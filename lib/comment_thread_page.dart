@@ -29,7 +29,7 @@ class _CommentThreadPageState extends State<CommentThreadPage> {
   String? error;
   IO.Socket? _socket;
 
-  bool _hasNewComments = false; // 🟢 NEW FEATURE
+  bool _hasNewComments = false;
 
   final _controller = TextEditingController();
   String? replyingTo;
@@ -71,7 +71,6 @@ class _CommentThreadPageState extends State<CommentThreadPage> {
     };
   }
 
-  // ---------- LOAD COMMENTS ----------
   Future<void> _loadComments() async {
     setState(() => loading = true);
     try {
@@ -93,16 +92,30 @@ class _CommentThreadPageState extends State<CommentThreadPage> {
     if (mounted) setState(() => loading = false);
   }
 
-  // ---------- POST COMMENT ----------
   Future<void> _postComment() async {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
 
     if (_containsBannedWord(text)) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text("⚠️ Please avoid using offensive language."),
-        backgroundColor: Colors.orange,
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+            'Please avoid using offensive language',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          backgroundColor: Colors.black.withOpacity(0.85),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          duration: const Duration(seconds: 2),
+        ),
+      );
       return;
     }
 
@@ -125,21 +138,70 @@ class _CommentThreadPageState extends State<CommentThreadPage> {
           replyingTo = null;
           replyingToName = null;
         });
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text("✅ Comment posted!"),
-          backgroundColor: Colors.teal,
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text(
+              'Comment posted',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            backgroundColor: Colors.black.withOpacity(0.85),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            duration: const Duration(seconds: 2),
+          ),
+        );
         await _loadComments();
       } else {
         final bodyData = jsonDecode(res.body);
         final errorMsg = bodyData['error']?.toString() ?? "Unknown error";
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text("❌ $errorMsg")));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              errorMsg,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            backgroundColor: Colors.redAccent.withOpacity(0.85),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            duration: const Duration(seconds: 3),
+          ),
+        );
       }
     } catch (e, st) {
       debugPrint("💥 Error posting comment: $e\n$st");
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("Error: $e")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Error: $e',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          backgroundColor: Colors.redAccent.withOpacity(0.85),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          duration: const Duration(seconds: 3),
+        ),
+      );
     }
   }
 
@@ -155,12 +217,24 @@ class _CommentThreadPageState extends State<CommentThreadPage> {
           .build(),
     );
 
+    // 🔵 Connected
     _socket!.onConnect((_) {
       _socket!.emit('join-answer', widget.answerId);
       debugPrint("🟢 Joined thread for ${widget.answerId}");
     });
 
-    // 🟢 Instead of auto-inserting, show the "new comments" banner
+    // 🔄 FIX 1 — Reconnect handler (VERY important!)
+    _socket!.onReconnect((_) {
+      _socket!.emit('join-answer', widget.answerId);
+      debugPrint("🔄 Reconnected & rejoined thread for ${widget.answerId}");
+    });
+
+    // 🔻 FIX 2 — Disconnect handler
+    _socket!.onDisconnect((_) {
+      debugPrint("🔴 Socket disconnected");
+    });
+
+    // 🟢 Show banner when new comment arrives
     _socket!.on('comment:created', (data) {
       if (mounted) setState(() => _hasNewComments = true);
       debugPrint("💬 New comment detected — banner shown.");
@@ -176,6 +250,7 @@ class _CommentThreadPageState extends State<CommentThreadPage> {
     _socket!.connect();
   }
 
+
   @override
   void dispose() {
     _socket?.emit('leave-answer', widget.answerId);
@@ -184,7 +259,7 @@ class _CommentThreadPageState extends State<CommentThreadPage> {
     super.dispose();
   }
 
-    // ---------- UI ----------
+  // ---------- UI ----------
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -207,7 +282,6 @@ class _CommentThreadPageState extends State<CommentThreadPage> {
           ? const Center(child: CircularProgressIndicator(color: Colors.tealAccent))
           : Column(
               children: [
-                // ---------- Header ----------
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -243,7 +317,6 @@ class _CommentThreadPageState extends State<CommentThreadPage> {
                   ),
                 ),
 
-                // ---------- New Comments Banner (fade + slide-in) ----------
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 500),
                   transitionBuilder: (child, animation) => SlideTransition(
@@ -259,45 +332,50 @@ class _CommentThreadPageState extends State<CommentThreadPage> {
                   child: _hasNewComments
                       ? Padding(
                           key: const ValueKey('newCommentsBanner'),
-                          padding: const EdgeInsets.only(top: 10, bottom: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                           child: GestureDetector(
                             onTap: () async {
                               await _loadComments();
                               if (mounted) setState(() => _hasNewComments = false);
                             },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 20, vertical: 10),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(20),
-                                gradient: const LinearGradient(
-                                  colors: [Color(0xFF00BFA5), Color(0xFF00796B)],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.tealAccent.withOpacity(0.4),
-                                    blurRadius: 10,
-                                    spreadRadius: 1,
-                                  ),
-                                ],
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                maxWidth: MediaQuery.of(context).size.width - 32,
                               ),
-                              child: const Row(
-                                mainAxisSize: MainAxisSize.min,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.chat_bubble_outline,
-                                      color: Colors.white, size: 18),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    "New comments available – Tap to refresh",
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(20),
+                                  gradient: const LinearGradient(
+                                    colors: [Color(0xFF00BFA5), Color(0xFF00796B)],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
                                   ),
-                                ],
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.tealAccent.withOpacity(0.4),
+                                      blurRadius: 10,
+                                      spreadRadius: 1,
+                                    ),
+                                  ],
+                                ),
+                                child: Row(
+                                  children: const [
+                                    Icon(Icons.chat_bubble_outline,
+                                        color: Colors.white, size: 18),
+                                    SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        "New comments available – Tap to refresh",
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
@@ -305,7 +383,6 @@ class _CommentThreadPageState extends State<CommentThreadPage> {
                       : const SizedBox.shrink(),
                 ),
 
-                // ---------- Comments ----------
                 Expanded(
                   child: comments.isEmpty
                       ? const Center(
@@ -320,15 +397,12 @@ class _CommentThreadPageState extends State<CommentThreadPage> {
                         ),
                 ),
 
-                // ---------- Input ----------
                 _buildInput(theme),
               ],
             ),
     );
   }
 
-
-  // ---------- INPUT ----------
   Widget _buildInput(ThemeData theme) {
     return Container(
       decoration: BoxDecoration(
@@ -396,7 +470,6 @@ class _CommentThreadPageState extends State<CommentThreadPage> {
     );
   }
 
-  // ---------- THREAD ----------
   List<Widget> _buildThread(List<Comment> all) {
     final Map<String?, List<Comment>> tree = {};
     for (final c in all) {
@@ -416,7 +489,6 @@ class _CommentThreadPageState extends State<CommentThreadPage> {
     return buildLevel(null, 0);
   }
 
-  // ---------- COMMENT CARD ----------
   Widget _commentCard(
     Comment c,
     int depth,
@@ -541,15 +613,46 @@ class _CommentThreadPageState extends State<CommentThreadPage> {
                                 "",
                               );
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content: Text("✅ Challenge sent!")),
+                                SnackBar(
+                                  content: const Text(
+                                    'Challenge sent',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  backgroundColor: Colors.black.withOpacity(0.85),
+                                  behavior: SnackBarBehavior.floating,
+                                  margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  duration: const Duration(seconds: 2),
+                                ),
                               );
                               setState(() {
                                 challengedUserIds.add(c.userId ?? "");
                               });
                             } catch (e) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text("❌ Error: $e")),
+                                SnackBar(
+                                  content: Text(
+                                    'Error: $e',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  backgroundColor: Colors.redAccent.withOpacity(0.85),
+                                  behavior: SnackBarBehavior.floating,
+                                  margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  duration: const Duration(seconds: 3),
+                                ),
                               );
                             }
                           },
@@ -594,7 +697,6 @@ class _CommentThreadPageState extends State<CommentThreadPage> {
   }
 }
 
-// ---------- MODEL ----------
 class Comment {
   final String id;
   final String text;

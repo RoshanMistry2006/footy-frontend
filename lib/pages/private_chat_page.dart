@@ -98,16 +98,42 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
       final error = e.toString();
       if (error.contains("banned words")) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("⚠️ Your message contains banned words."),
-            backgroundColor: Colors.orange,
+          SnackBar(
+            content: const Text(
+              'Your message contains banned words',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            backgroundColor: Colors.black.withOpacity(0.85),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            duration: const Duration(seconds: 2),
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("❌ $error"),
-            backgroundColor: Colors.redAccent,
+            content: Text(
+              error,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            backgroundColor: Colors.redAccent.withOpacity(0.85),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            duration: const Duration(seconds: 3),
           ),
         );
       }

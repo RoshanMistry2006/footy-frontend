@@ -219,7 +219,23 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> with SingleTicker
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("✅ Answer submitted!")),
+          SnackBar(
+            content: const Text(
+              'Answer submitted',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            backgroundColor: Colors.black.withOpacity(0.85),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            duration: const Duration(seconds: 2),
+          ),
         );
 
         await _loadAnswers();
@@ -800,7 +816,23 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> with SingleTicker
 
     if (result == true) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("✅ Premium style applied!")),
+        SnackBar(
+          content: const Text(
+            'Premium style applied',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          backgroundColor: Colors.black.withOpacity(0.85),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          duration: const Duration(seconds: 2),
+        ),
       );
       await _loadAnswers();
     }

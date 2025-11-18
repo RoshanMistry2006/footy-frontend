@@ -63,11 +63,28 @@ class _PremiumDesignPageState extends State<PremiumDesignPage>
     };
   }
 
-  // ---------- CONFIRM & ACTIVATE ----------
   Future<void> _confirm() async {
     setState(() => loading = true);
+
+    // 💳 Processing payment (modern snackbar)
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("💳 Processing fake payment...")),
+      SnackBar(
+        content: const Text(
+          'Processing fake payment...',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        backgroundColor: Colors.black.withOpacity(0.85),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        duration: const Duration(seconds: 2),
+      ),
     );
 
     await Future.delayed(const Duration(seconds: 2));
@@ -75,8 +92,25 @@ class _PremiumDesignPageState extends State<PremiumDesignPage>
 
     if (!paymentSuccess) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("❌ Payment failed")),
+        SnackBar(
+          content: const Text(
+            'Payment failed',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          backgroundColor: Colors.redAccent.withOpacity(0.85),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          duration: const Duration(seconds: 3),
+        ),
       );
+
       setState(() => loading = false);
       return;
     }
@@ -105,36 +139,81 @@ class _PremiumDesignPageState extends State<PremiumDesignPage>
 
       if (res.statusCode == 200) {
         if (!mounted) return;
+
+        // 🎨 Premium applied
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("✅ Premium style applied successfully!"),
-            backgroundColor: Colors.green,
+          SnackBar(
+            content: const Text(
+              'Premium style applied successfully!',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            backgroundColor: Colors.black.withOpacity(0.85),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            duration: const Duration(seconds: 2),
           ),
         );
+
         Navigator.pop(context, true);
       } else {
         debugPrint("❌ Backend error: ${res.body}");
         if (!mounted) return;
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("❌ Failed to activate premium: ${res.body}"),
-            backgroundColor: Colors.redAccent,
+            content: Text(
+              'Failed to activate premium: ${res.body}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            backgroundColor: Colors.redAccent.withOpacity(0.85),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            duration: const Duration(seconds: 3),
           ),
         );
       }
     } catch (e) {
       debugPrint("💥 Error activating premium: $e");
       if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Error: $e"),
-          backgroundColor: Colors.redAccent,
+          content: Text(
+            'Error: $e',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          backgroundColor: Colors.redAccent.withOpacity(0.85),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          duration: const Duration(seconds: 3),
         ),
       );
     }
 
     if (mounted) setState(() => loading = false);
   }
+
 
   // ---------- BUILD UI ----------
   @override

@@ -62,11 +62,17 @@ flutter_icons:
 #                SPLASH SCREEN CONFIGURATION
 # ==========================================================
 flutter_native_splash:
-  color: "#0B0D10"           # dark BallTalk background
-  image: assets/logo.png     # your logo path
+  color: "#0B0D10"
+  image: assets/logo.png
+  fill: true          # ← IMPORTANT (fixes scaling on real devices)
+  ios: true           # ← ensures iOS splash applies
+  android: true
   branding: null
+
   android_12:
     image: assets/logo.png
     icon_background_color: "#0B0D10"
+
   web: false
+
 

@@ -35,119 +35,129 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'BallTalk',
-      debugShowCheckedModeBanner: false,
-      themeMode: ThemeMode.dark,
+    return Builder(
+      builder: (context) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+            padding: const EdgeInsets.only(bottom: 8), // 🔥 global bottom spacing fix
+          ),
+          child: MaterialApp(
+            title: 'BallTalk',
+            debugShowCheckedModeBanner: false,
+            themeMode: ThemeMode.dark,
 
-      // ✅ Light Theme
-      theme: ThemeData(
-        useMaterial3: true,
-        fontFamily: 'Poppins',
-        colorScheme: const ColorScheme.light(
-          primary: Color(0xFF00BFA5),
-          secondary: Color(0xFF121212),
-          background: Color(0xFFF5F5F5),
-          surface: Colors.white,
-        ),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF00BFA5),
-          foregroundColor: Colors.white,
-          titleTextStyle: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 22,
-            letterSpacing: 1.1,
-          ),
-        ),
-        snackBarTheme: const SnackBarThemeData(
-          backgroundColor: Color(0xFF00BFA5),
-          contentTextStyle: TextStyle(color: Colors.white),
-          behavior: SnackBarBehavior.floating,
-        ),
-        filledButtonTheme: FilledButtonThemeData(
-          style: FilledButton.styleFrom(
-            backgroundColor: const Color(0xFF00BFA5),
-            foregroundColor: Colors.white,
-            shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(Radius.circular(12)),
+            // ✅ Light Theme
+            theme: ThemeData(
+              useMaterial3: true,
+              fontFamily: 'Poppins',
+              colorScheme: const ColorScheme.light(
+                primary: Color(0xFF00BFA5),
+                secondary: Color(0xFF121212),
+                background: Color(0xFFF5F5F5),
+                surface: Colors.white,
+              ),
+              appBarTheme: const AppBarTheme(
+                backgroundColor: Color(0xFF00BFA5),
+                foregroundColor: Colors.white,
+                titleTextStyle: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 22,
+                  letterSpacing: 1.1,
+                ),
+              ),
+              snackBarTheme: const SnackBarThemeData(
+                backgroundColor: Color(0xFF00BFA5),
+                contentTextStyle: TextStyle(color: Colors.white),
+                behavior: SnackBarBehavior.floating,
+              ),
+              filledButtonTheme: FilledButtonThemeData(
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFF00BFA5),
+                  foregroundColor: Colors.white,
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
+                  ),
+                  textStyle: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
             ),
-            textStyle: const TextStyle(fontWeight: FontWeight.w600),
-          ),
-        ),
-      ),
 
-      // 🌑 Dark Sporty Theme
-      darkTheme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.dark,
-        fontFamily: 'Poppins',
-        scaffoldBackgroundColor: const Color(0xFF0B0D10),
-        colorScheme: const ColorScheme.dark(
-          primary: Color(0xFF00BFA5),
-          secondary: Color(0xFFB2FF59),
-          background: Color(0xFF0B0D10),
-          surface: Color(0xFF161A1F),
-        ),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF00BFA5),
-          foregroundColor: Colors.white,
-          titleTextStyle: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 22,
-            letterSpacing: 1.1,
-          ),
-        ),
-        cardTheme: const CardThemeData(
-          color: Color(0xFF161A1F),
-          elevation: 2,
-          margin: EdgeInsets.all(8),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(16)),
-          ),
-        ),
-        snackBarTheme: const SnackBarThemeData(
-          backgroundColor: Color(0xFF00BFA5),
-          contentTextStyle: TextStyle(color: Colors.white),
-        ),
-        filledButtonTheme: FilledButtonThemeData(
-          style: FilledButton.styleFrom(
-            backgroundColor: const Color(0xFF00BFA5),
-            foregroundColor: Colors.white,
-            shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(Radius.circular(16)),
+            // 🌑 Dark Sporty Theme
+            darkTheme: ThemeData(
+              useMaterial3: true,
+              brightness: Brightness.dark,
+              fontFamily: 'Poppins',
+              scaffoldBackgroundColor: const Color(0xFF0B0D10),
+              colorScheme: const ColorScheme.dark(
+                primary: Color(0xFF00BFA5),
+                secondary: Color(0xFFB2FF59),
+                background: Color(0xFF0B0D10),
+                surface: Color(0xFF161A1F),
+              ),
+              appBarTheme: const AppBarTheme(
+                backgroundColor: Color(0xFF00BFA5),
+                foregroundColor: Colors.white,
+                titleTextStyle: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 22,
+                  letterSpacing: 1.1,
+                ),
+              ),
+              cardTheme: const CardThemeData(
+                color: Color(0xFF161A1F),
+                elevation: 2,
+                margin: EdgeInsets.all(8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(16)),
+                ),
+              ),
+              snackBarTheme: const SnackBarThemeData(
+                backgroundColor: Color(0xFF00BFA5),
+                contentTextStyle: TextStyle(color: Colors.white),
+              ),
+              filledButtonTheme: FilledButtonThemeData(
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFF00BFA5),
+                  foregroundColor: Colors.white,
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(16)),
+                  ),
+                  textStyle: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+              inputDecorationTheme: InputDecorationTheme(
+                filled: true,
+                fillColor: const Color(0xFF161A1F),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                labelStyle: const TextStyle(color: Colors.white70),
+              ),
             ),
-            textStyle: const TextStyle(
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.5,
-            ),
-          ),
-        ),
-        inputDecorationTheme: InputDecorationTheme(
-          filled: true,
-          fillColor: const Color(0xFF161A1F),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
-          ),
-          labelStyle: const TextStyle(color: Colors.white70),
-        ),
-      ),
 
-      // ✅ Routes
-      routes: {
-        '/requests': (_) => AllDebateRequestsPage(), // removed const
+            // ✅ Routes
+            routes: {
+              '/requests': (_) => AllDebateRequestsPage(),
+            },
+
+            home: StreamBuilder<User?>(
+              stream: FirebaseAuth.instance.userChanges(),
+              builder: (context, snap) {
+                final user = snap.data;
+                if (user == null) return const SignInPage();
+                return const LoggedInHome();
+              },
+            ),
+          ),
+        );
       },
-
-      home: StreamBuilder<User?>(
-        stream: FirebaseAuth.instance.userChanges(),
-        builder: (context, snap) {
-          final user = snap.data;
-          if (user == null) return const SignInPage();
-          return const LoggedInHome();
-        },
-      ),
     );
   }
+
 }
 
 // --------------------------------------------------
@@ -460,7 +470,23 @@ class _RegisterPageState extends State<RegisterPage> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("✅ Account created! Please sign in.")),
+          SnackBar(
+            content: const Text(
+              'Account created! Please sign in.',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            backgroundColor: Colors.black.withOpacity(0.85),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            duration: const Duration(seconds: 2),
+          ),
         );
         Navigator.pushReplacement(
           context,

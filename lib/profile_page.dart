@@ -1,9 +1,6 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:image_picker/image_picker.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -18,9 +15,7 @@ class _ProfilePageState extends State<ProfilePage> {
   final _teamCtrl = TextEditingController();
 
   bool _saving = false;
-  bool _uploading = false;
 
-  String? _photoURL;
   String? _email;
 
   int _totalAnswers = 0;
@@ -44,15 +39,12 @@ class _ProfilePageState extends State<ProfilePage> {
       final data = userSnap.data()!;
       _nameCtrl.text = (data['displayName'] ?? user.displayName ?? '') as String;
       _teamCtrl.text = (data['favoriteTeam'] ?? '') as String;
-      _photoURL = data['photoURL'] ?? user.photoURL;
       _bestAnswers = (data['discussionsWon'] ?? 0) as int;
       _totalAnswers = (data['totalComments'] ?? 0) as int;
     } else {
-      // Fallback for new users
       await userRef.set({
         'displayName': user.displayName ?? '',
         'favoriteTeam': '',
-        'photoURL': user.photoURL,
         'discussionsWon': 0,
         'totalComments': 0,
         'createdAt': FieldValue.serverTimestamp(),
@@ -79,37 +71,25 @@ class _ProfilePageState extends State<ProfilePage> {
     if (mounted) {
       setState(() => _saving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('✅ Profile updated')),
+        SnackBar(
+          content: const Text(
+            'Profile updated successfully',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          backgroundColor: Colors.black.withOpacity(0.85),
+          elevation: 6,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          duration: const Duration(seconds: 2),
+        ),
       );
-    }
-  }
-
-  Future<void> _pickAndUploadPhoto() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery);
-    if (picked == null) return;
-
-    setState(() => _uploading = true);
-
-    try {
-      final user = FirebaseAuth.instance.currentUser!;
-      final ref = FirebaseStorage.instance.ref('profile_pics/${user.uid}.jpg');
-      await ref.putFile(File(picked.path));
-      final url = await ref.getDownloadURL();
-
-      await user.updatePhotoURL(url);
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .set({'photoURL': url}, SetOptions(merge: true));
-
-      _photoURL = url;
-      setState(() {});
-    } catch (e) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Upload failed: $e')));
-    } finally {
-      setState(() => _uploading = false);
     }
   }
 
@@ -130,8 +110,7 @@ class _ProfilePageState extends State<ProfilePage> {
               controller: currentPasswordCtrl,
               obscureText: true,
               style: const TextStyle(color: Colors.white),
-              decoration:
-                  const InputDecoration(labelText: 'Current password'),
+              decoration: const InputDecoration(labelText: 'Current password'),
             ),
             TextField(
               controller: newPasswordCtrl,
@@ -191,6 +170,11 @@ class _ProfilePageState extends State<ProfilePage> {
     final theme = Theme.of(context);
     final primary = theme.colorScheme.primary;
 
+    // Extract first letter
+    final displayLetter = (_nameCtrl.text.trim().isNotEmpty)
+        ? _nameCtrl.text.trim()[0].toUpperCase()
+        : '?';
+
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
@@ -218,55 +202,30 @@ class _ProfilePageState extends State<ProfilePage> {
             children: [
               const SizedBox(height: 12),
 
-              // ---------- Profile Picture ----------
+              // ---------- REPLACED PROFILE AVATAR ----------
               Container(
+                padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF00BFA5), Color(0xFF00796B)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.tealAccent.withOpacity(0.3),
+                      color: Colors.tealAccent.withOpacity(0.5),
                       blurRadius: 15,
-                      spreadRadius: 2,
+                      spreadRadius: 3,
                     ),
                   ],
                 ),
-                padding: const EdgeInsets.all(3),
-                child: Stack(
-                  alignment: Alignment.bottomRight,
-                  children: [
-                    CircleAvatar(
-                      radius: 60,
-                      backgroundImage:
-                          _photoURL != null ? NetworkImage(_photoURL!) : null,
-                      backgroundColor: Colors.grey.shade900,
-                      child: _photoURL == null
-                          ? const Icon(Icons.person,
-                              size: 55, color: Colors.white70)
-                          : null,
+                child: CircleAvatar(
+                  radius: 60,
+                  backgroundColor: const Color(0xFF0F1A1A),
+                  child: Text(
+                    displayLetter,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 48,
+                      fontWeight: FontWeight.bold,
                     ),
-                    Positioned(
-                      right: 4,
-                      bottom: 4,
-                      child: FloatingActionButton(
-                        mini: true,
-                        onPressed: _uploading ? null : _pickAndUploadPhoto,
-                        backgroundColor: primary,
-                        child: _uploading
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                    strokeWidth: 2, color: Colors.white),
-                              )
-                            : const Icon(Icons.edit, color: Colors.white),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
 
@@ -340,13 +299,13 @@ class _ProfilePageState extends State<ProfilePage> {
 
               const SizedBox(height: 32),
 
-              // ---------- Buttons ----------
+              // ---------- Save Button ----------
               FilledButton(
                 onPressed: _saving ? null : _save,
                 style: FilledButton.styleFrom(
                   backgroundColor: primary,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 40, vertical: 14),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
                 ),
@@ -360,6 +319,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     : const Text('Save changes',
                         style: TextStyle(color: Colors.white, fontSize: 16)),
               ),
+
               const SizedBox(height: 20),
 
               OutlinedButton.icon(
