@@ -7,6 +7,8 @@ import 'today_question_page.dart';
 import 'profile_header.dart';
 import 'pages/all_debate_requests_page.dart';
 import 'forgot_password_page.dart';
+import 'package:flutter/services.dart';
+
 
 
 Future<void> main() async {
@@ -35,128 +37,134 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Builder(
-      builder: (context) {
-        return MediaQuery(
-          data: MediaQuery.of(context).copyWith(
-            padding: const EdgeInsets.only(bottom: 8), // 🔥 global bottom spacing fix
+    return MaterialApp(
+      title: 'BallTalk',
+      debugShowCheckedModeBanner: false,
+      themeMode: ThemeMode.dark,
+
+      // ✅ Light Theme
+      theme: ThemeData(
+        useMaterial3: true,
+        fontFamily: 'Poppins',
+        colorScheme: const ColorScheme.light(
+          primary: Color(0xFF00BFA5),
+          secondary: Color(0xFF121212),
+          background: Color(0xFFF5F5F5),
+          surface: Colors.white,
+        ),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xFF00BFA5),
+          foregroundColor: Colors.white,
+          toolbarHeight: 56,
+          titleSpacing: 0,
+          systemOverlayStyle: SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness: Brightness.light,
           ),
-          child: MaterialApp(
-            title: 'BallTalk',
-            debugShowCheckedModeBanner: false,
-            themeMode: ThemeMode.dark,
-
-            // ✅ Light Theme
-            theme: ThemeData(
-              useMaterial3: true,
-              fontFamily: 'Poppins',
-              colorScheme: const ColorScheme.light(
-                primary: Color(0xFF00BFA5),
-                secondary: Color(0xFF121212),
-                background: Color(0xFFF5F5F5),
-                surface: Colors.white,
-              ),
-              appBarTheme: const AppBarTheme(
-                backgroundColor: Color(0xFF00BFA5),
-                foregroundColor: Colors.white,
-                titleTextStyle: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 22,
-                  letterSpacing: 1.1,
-                ),
-              ),
-              snackBarTheme: const SnackBarThemeData(
-                backgroundColor: Color(0xFF00BFA5),
-                contentTextStyle: TextStyle(color: Colors.white),
-                behavior: SnackBarBehavior.floating,
-              ),
-              filledButtonTheme: FilledButtonThemeData(
-                style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF00BFA5),
-                  foregroundColor: Colors.white,
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(12)),
-                  ),
-                  textStyle: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-              ),
+          centerTitle: true,
+          titleTextStyle: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 22,
+            letterSpacing: 1.1,
+          ),
+        ),
+        snackBarTheme: const SnackBarThemeData(
+          backgroundColor: Color(0xFF00BFA5),
+          contentTextStyle: TextStyle(color: Colors.white),
+          behavior: SnackBarBehavior.floating,
+        ),
+        filledButtonTheme: FilledButtonThemeData(
+          style: FilledButton.styleFrom(
+            backgroundColor: const Color(0xFF00BFA5),
+            foregroundColor: Colors.white,
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(12)),
             ),
+            textStyle: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+        ),
+      ),
 
-            // 🌑 Dark Sporty Theme
-            darkTheme: ThemeData(
-              useMaterial3: true,
-              brightness: Brightness.dark,
-              fontFamily: 'Poppins',
-              scaffoldBackgroundColor: const Color(0xFF0B0D10),
-              colorScheme: const ColorScheme.dark(
-                primary: Color(0xFF00BFA5),
-                secondary: Color(0xFFB2FF59),
-                background: Color(0xFF0B0D10),
-                surface: Color(0xFF161A1F),
-              ),
-              appBarTheme: const AppBarTheme(
-                backgroundColor: Color(0xFF00BFA5),
-                foregroundColor: Colors.white,
-                titleTextStyle: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 22,
-                  letterSpacing: 1.1,
-                ),
-              ),
-              cardTheme: const CardThemeData(
-                color: Color(0xFF161A1F),
-                elevation: 2,
-                margin: EdgeInsets.all(8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(16)),
-                ),
-              ),
-              snackBarTheme: const SnackBarThemeData(
-                backgroundColor: Color(0xFF00BFA5),
-                contentTextStyle: TextStyle(color: Colors.white),
-              ),
-              filledButtonTheme: FilledButtonThemeData(
-                style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF00BFA5),
-                  foregroundColor: Colors.white,
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(16)),
-                  ),
-                  textStyle: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ),
-              inputDecorationTheme: InputDecorationTheme(
-                filled: true,
-                fillColor: const Color(0xFF161A1F),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-                labelStyle: const TextStyle(color: Colors.white70),
-              ),
+      // 🌑 Dark Sporty Theme
+      darkTheme: ThemeData(
+        useMaterial3: true,
+        brightness: Brightness.dark,
+        fontFamily: 'Poppins',
+        scaffoldBackgroundColor: const Color(0xFF0B0D10),
+        colorScheme: const ColorScheme.dark(
+          primary: Color(0xFF00BFA5),
+          secondary: Color(0xFFB2FF59),
+          background: Color(0xFF0B0D10),
+          surface: Color(0xFF161A1F),
+        ),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xFF00BFA5),
+          foregroundColor: Colors.white,
+          toolbarHeight: 56,
+          titleSpacing: 0,
+          systemOverlayStyle: SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness: Brightness.light,
+          ),
+          centerTitle: true,
+          titleTextStyle: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 22,
+            letterSpacing: 1.1,
+          ),
+        ),
+        cardTheme: const CardThemeData(
+          color: Color(0xFF161A1F),
+          elevation: 2,
+          margin: EdgeInsets.all(8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(16)),
+          ),
+        ),
+        snackBarTheme: const SnackBarThemeData(
+          backgroundColor: Color(0xFF00BFA5),
+          contentTextStyle: TextStyle(color: Colors.white),
+        ),
+        filledButtonTheme: FilledButtonThemeData(
+          style: FilledButton.styleFrom(
+            backgroundColor: const Color(0xFF00BFA5),
+            foregroundColor: Colors.white,
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(16)),
             ),
-
-            // ✅ Routes
-            routes: {
-              '/requests': (_) => AllDebateRequestsPage(),
-            },
-
-            home: StreamBuilder<User?>(
-              stream: FirebaseAuth.instance.userChanges(),
-              builder: (context, snap) {
-                final user = snap.data;
-                if (user == null) return const SignInPage();
-                return const LoggedInHome();
-              },
+            textStyle: const TextStyle(
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
             ),
           ),
-        );
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: const Color(0xFF161A1F),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+          labelStyle: const TextStyle(color: Colors.white70),
+        ),
+      ),
+
+      // ✅ Routes
+      routes: {
+        '/requests': (_) => AllDebateRequestsPage(),
       },
+
+      home: StreamBuilder<User?>(
+        stream: FirebaseAuth.instance.userChanges(),
+        builder: (context, snap) {
+          final user = snap.data;
+          if (user == null) return const SignInPage();
+          return const LoggedInHome();
+        },
+      ),
     );
   }
+
 
 }
 
