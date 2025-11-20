@@ -488,7 +488,7 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> with SingleTicker
                                         style: TextStyle(
                                           color: Colors.white,
                                           fontWeight: FontWeight.w700,
-                                          fontSize: 15,
+                                          fontSize: 12,
                                         ),
                                       ),
                                     ],

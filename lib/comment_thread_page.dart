@@ -400,75 +400,86 @@ class _CommentThreadPageState extends State<CommentThreadPage> {
                 _buildInput(theme),
               ],
             ),
+      
     );
   }
 
   Widget _buildInput(ThemeData theme) {
     return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF111418),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 8,
-            offset: const Offset(0, -3),
-          )
-        ],
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: _controller,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                hintText: replyingTo == null
-                    ? "Write a comment..."
-                    : "Replying to @$replyingToName",
-                hintStyle: const TextStyle(color: Colors.white54),
-                filled: true,
-                fillColor: const Color(0xFF1A1D21),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      color: const Color(0xFF111418), // 👈 fills bottom area with same gray tone
+      child: SafeArea(
+        top: false,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: const BoxDecoration(
+            color: Color(0xFF111418), // 👈 matches background color
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black54,
+                blurRadius: 6,
+                offset: Offset(0, -2),
               ),
-            ),
+            ],
           ),
-          const SizedBox(width: 8),
-          GestureDetector(
-            onTap: _postComment,
-            child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.tealAccent,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.tealAccent.withOpacity(0.5),
-                    blurRadius: 10,
-                    spreadRadius: 1,
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _controller,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: replyingTo == null
+                        ? "Write a comment..."
+                        : "Replying to @$replyingToName",
+                    hintStyle: const TextStyle(color: Colors.white54),
+                    filled: true,
+                    fillColor: Color(0xFF1A1D21), // input background
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
                   ),
-                ],
-              ),
-              child: const Text(
-                "Post",
-                style: TextStyle(
-                  color: Colors.black,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 15,
                 ),
               ),
-            ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: _postComment,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.tealAccent,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.tealAccent.withOpacity(0.5),
+                        blurRadius: 10,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                  child: const Text(
+                    "Post",
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
+
+
 
   List<Widget> _buildThread(List<Comment> all) {
     final Map<String?, List<Comment>> tree = {};
