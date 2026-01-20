@@ -26,14 +26,13 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^5.0.0
 
-  # ✅ Add flutter_launcher_icons for app icon generation
+  # App icon generation
   flutter_launcher_icons: ^0.13.1
 
 # ==========================================================
 #                    FLUTTER SETTINGS
 # ==========================================================
 flutter:
-
   uses-material-design: true
 
   fonts:
@@ -43,9 +42,9 @@ flutter:
         - asset: fonts/Poppins-Bold.ttf
           weight: 700
 
-  # ✅ Add your BallTalk logo asset here
+  # ✅ Use the NEW icon asset
   assets:
-    - assets/logo.png
+    - assets/icon/icon.png
 
 # ==========================================================
 #                APP ICON CONFIGURATION
@@ -61,16 +60,15 @@ flutter_launcher_icons:
 # ==========================================================
 flutter_native_splash:
   color: "#0B0D10"
-  image: assets/logo.png
-  fill: true          # ← IMPORTANT (fixes scaling on real devices)
-  ios: true           # ← ensures iOS splash applies
+  image: assets/icon/icon.png
+  fill: true
+  ios: true
   android: true
   branding: null
 
   android_12:
-    image: assets/logo.png
+    image: assets/icon/icon.png
     icon_background_color: "#0B0D10"
 
   web: false
-
 
