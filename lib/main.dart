@@ -186,6 +186,8 @@ class _SignInPageState extends State<SignInPage> {
   bool showPassword = false;
 
   Future<void> signIn() async {
+    if (loading) return;
+
     setState(() {
       loading = true;
       error = null;
@@ -194,15 +196,14 @@ class _SignInPageState extends State<SignInPage> {
     try {
       await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: email.text.trim(),
-        password: password.text.trim(),
+        password: password.text.trim(), // you can keep trim or remove it
       );
 
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const LoggedInHome()),
-        );
-      }
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const LoggedInHome()),
+      );
     } on FirebaseAuthException catch (e) {
       String message;
       switch (e.code) {
@@ -219,9 +220,21 @@ class _SignInPageState extends State<SignInPage> {
         default:
           message = 'Sign-in failed. Please try again.';
       }
-      setState(() => error = message);
+
+      if (mounted) {
+        setState(() => error = message);
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => error = 'Sign-in failed. Please try again.');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => loading = false);
+      }
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
