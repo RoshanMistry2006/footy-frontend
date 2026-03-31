@@ -3,14 +3,12 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:http/http.dart' as http;
 import 'package:socket_io_client/socket_io_client.dart' as IO;
+import 'api_client.dart';
 import 'comment_thread_page.dart';
 import 'profile_page.dart';
 import '../pages/premium_design_page.dart';
-import '../pages/all_debate_requests_page.dart'; // ✅ Import for debate requests
-
-const String _origin = "https://footy-backend-yka8.onrender.com";
+import '../pages/all_debate_requests_page.dart';
 
 class TodayQuestionPage extends StatefulWidget {
   const TodayQuestionPage({super.key});
@@ -43,9 +41,6 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> with SingleTicker
 
   late AnimationController _glowController;
 
-
-
-
   @override
   void initState() {
     super.initState();
@@ -61,17 +56,6 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> with SingleTicker
   }
 
   // ---------- Helpers ----------
-  String _api(String path) => '$_origin/api$path';
-
-  Future<Map<String, String>> _headers() async {
-    final user = FirebaseAuth.instance.currentUser;
-    final token = await user?.getIdToken(true);
-    if (token == null) throw Exception("⚠️ No Firebase token found – please log in again.");
-    return {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
-    };
-  }
 
   Future<void> _bootstrap() async {
     setState(() {
@@ -83,17 +67,14 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> with SingleTicker
       // Step 1: load question first
       await _loadQuestion();
 
-      // Step 2: sequentially load vote -> answers (NOT in parallel)
-      await _loadMyVote();
-      await _loadAnswers();
+      // Step 2: load vote and answers in parallel (faster)
+      await Future.wait([_loadMyVote(), _loadAnswers()]);
 
-      // Step 3: print debugging info
       debugPrint("🎯 After bootstrap: myVotedAnswerId=$myVotedAnswerId, answers=${answers.length}");
 
-      // Step 4: force one final rebuild after both are ready
       if (mounted) setState(() {});
 
-      // Step 5: load winner and start countdown
+      // Step 3: load winner and start countdown
       await _getWinner(silent: true);
       _startCountdown();
     } catch (e, st) {
@@ -104,13 +85,8 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> with SingleTicker
     }
   }
 
-
-
   Future<void> _loadQuestion() async {
-    final res = await http.get(
-      Uri.parse(_api("/questions/$currentDate")),
-      headers: await _headers(),
-    );
+    final res = await ApiClient.get("/questions/$currentDate");
     if (res.statusCode == 200) {
       setState(() => questionText = jsonDecode(res.body)["text"]);
     } else {
@@ -120,24 +96,20 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> with SingleTicker
 
   Future<void> _loadAnswers() async {
     try {
-      final res = await http.get(
-        Uri.parse(_api("/questions/$currentDate/answers")),
-        headers: await _headers(),
-      );
+      final res = await ApiClient.get("/questions/$currentDate/answers");
 
       debugPrint("📦 Answers API response (${res.statusCode}): ${res.body}");
 
       if (res.statusCode == 200) {
         final body = jsonDecode(res.body);
 
-        // 🧩 Accept any shape (List, Map with 'answers', or single object)
         List<dynamic> rawList;
         if (body is List) {
           rawList = body;
         } else if (body is Map && body['answers'] is List) {
           rawList = body['answers'];
         } else if (body is Map) {
-          rawList = [body]; // backend returned single answer
+          rawList = [body];
         } else {
           rawList = [];
         }
@@ -161,20 +133,16 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> with SingleTicker
     }
   }
 
-
   Future<void> _loadMyVote() async {
     try {
-      final res = await http.get(
-        Uri.parse(_api("/questions/$currentDate/vote")),
-        headers: await _headers(),
-      );
+      final res = await ApiClient.get("/questions/$currentDate/vote");
 
       debugPrint("📥 /vote response (${res.statusCode}): ${res.body}");
 
       if (res.statusCode == 200 && res.body.isNotEmpty) {
         final data = jsonDecode(res.body);
         final id = data["answerId"]?.toString().trim();
-        
+
         if (id != null && id.isNotEmpty) {
           setState(() {
             myVotedAnswerId = id;
@@ -193,7 +161,6 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> with SingleTicker
     }
   }
 
-
   Future<void> _submitAnswer() async {
     final text = _answerCtrl.text.trim();
     if (text.isEmpty) return;
@@ -204,18 +171,14 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> with SingleTicker
     });
 
     try {
-      final res = await http.post(
-        Uri.parse(_api("/questions/$currentDate/answers")),
-        headers: await _headers(),
-        body: jsonEncode({"text": text}),
-      );
+      final res = await ApiClient.post("/questions/$currentDate/answers", {"text": text});
 
       debugPrint("📤 POST /questions/$currentDate/answers → ${res.statusCode}");
       debugPrint("Response: ${res.body}");
 
       if (res.statusCode == 200 || res.statusCode == 201 || res.statusCode == 204) {
         setState(() {
-          _answerCtrl.clear(); // immediately clear
+          _answerCtrl.clear();
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -239,7 +202,7 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> with SingleTicker
         );
 
         await _loadAnswers();
-        setState(() {}); // 👈 force UI rebuild so answer list updates
+        setState(() {});
       } else {
         debugPrint("❌ Post failed: ${res.statusCode} - ${res.body}");
         setState(() => error = "Post failed: ${res.statusCode} ${res.body}");
@@ -252,13 +215,8 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> with SingleTicker
     }
   }
 
-
-
   Future<void> _vote(String answerId) async {
-    final res = await http.post(
-      Uri.parse(_api("/questions/$currentDate/answers/$answerId/vote")),
-      headers: await _headers(),
-    );
+    final res = await ApiClient.post("/questions/$currentDate/answers/$answerId/vote", {});
     if (res.statusCode == 200 || res.statusCode == 201) {
       setState(() => myVotedAnswerId = answerId);
       await _loadAnswers();
@@ -266,10 +224,7 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> with SingleTicker
   }
 
   Future<void> _unvote() async {
-    final res = await http.delete(
-      Uri.parse(_api("/questions/$currentDate/vote")),
-      headers: await _headers(),
-    );
+    final res = await ApiClient.delete("/questions/$currentDate/vote");
     if (res.statusCode == 200 || res.statusCode == 204) {
       setState(() => myVotedAnswerId = null);
       await _loadAnswers();
@@ -311,7 +266,7 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> with SingleTicker
   Future<void> _connectSocket() async {
     final token = await FirebaseAuth.instance.currentUser?.getIdToken();
     _socket = IO.io(
-      _origin,
+      ApiClient.baseUrl,
       IO.OptionBuilder()
           .setTransports(['websocket'])
           .setExtraHeaders({'Authorization': 'Bearer $token'})
@@ -334,7 +289,6 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> with SingleTicker
       ..on('challenge:received', (_) {
         if (mounted) setState(() => _newChallengesCount++);
       })
-      // 🟢 Show refresh banner instead of live update
       ..on('answer:created', (_) {
         debugPrint("🟢 New answer detected — refresh banner shown");
         if (mounted && !_hasNewAnswers) {
@@ -377,10 +331,7 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> with SingleTicker
 
   Future<void> _getWinner({bool silent = false}) async {
     try {
-      final res = await http.get(
-        Uri.parse(_api("/questions/$currentDate/winner")),
-        headers: await _headers(),
-      );
+      final res = await ApiClient.get("/questions/$currentDate/winner");
       if (res.statusCode == 200) {
         setState(() => winner = jsonDecode(res.body));
       } else {
@@ -414,17 +365,11 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> with SingleTicker
               ),
             ),
             const SizedBox(height: 12),
-
-            // 🏁 Question Card
             _buildQuestionCard(theme),
             const SizedBox(height: 12),
-
-            // ✅ Either answer input or submitted notice
             hasAnswered
                 ? _buildAlreadyAnsweredNotice()
                 : _buildAnswerInput(theme),
-
-            // 🟢 Smooth “New answers available” banner (now below input)
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 500),
               transitionBuilder: (child, animation) => SlideTransition(
@@ -451,16 +396,12 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> with SingleTicker
                           builder: (context, child) {
                             final glowOpacity = 0.6 + (_glowController.value * 0.4);
                             final scale = 1 + (_glowController.value * 0.02);
-
                             return Transform.scale(
                               scale: scale,
                               child: Opacity(
                                 opacity: glowOpacity,
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 22,
-                                    vertical: 12,
-                                  ),
+                                  padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
                                   decoration: BoxDecoration(
                                     gradient: const LinearGradient(
                                       colors: [Color(0xFF00BFA5), Color(0xFF00796B)],
@@ -480,8 +421,7 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> with SingleTicker
                                     mainAxisSize: MainAxisSize.min,
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      Icon(Icons.refresh,
-                                          color: Colors.white, size: 18),
+                                      Icon(Icons.refresh, color: Colors.white, size: 18),
                                       SizedBox(width: 8),
                                       Text(
                                         "New answers available – Tap to refresh",
@@ -502,10 +442,7 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> with SingleTicker
                     )
                   : const SizedBox.shrink(),
             ),
-
             const SizedBox(height: 8),
-
-            // 📋 Answers list
             Expanded(
               child: answers.isEmpty
                   ? const Center(
@@ -518,9 +455,7 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> with SingleTicker
                       ),
                     )
                   : ListView(
-                      children: answers
-                          .map((a) => _buildAnswerTile(context, a))
-                          .toList(),
+                      children: answers.map((a) => _buildAnswerTile(context, a)).toList(),
                     ),
             ),
           ],
@@ -528,7 +463,6 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> with SingleTicker
       ),
     );
   }
-
 
   AppBar _buildAppBar() {
     return AppBar(
@@ -639,7 +573,7 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> with SingleTicker
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(color: Colors.green.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
       child: const Text(
-        "✅ You’ve already submitted your answer for today.",
+        "✅ You've already submitted your answer for today.",
         style: TextStyle(color: Colors.green, fontWeight: FontWeight.w600),
         textAlign: TextAlign.center,
       ),
@@ -691,10 +625,6 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> with SingleTicker
       myVotedAnswerId != null &&
       myVotedAnswerId!.toString().trim() == a.id.toString().trim();
 
-
-
-
-
     final bgColor = a.isPremium
         ? Color(int.tryParse(a.premiumStyle?['backgroundColor']?.replaceAll('#', '0xff') ?? '') ?? 0xFFFFF9C4)
         : theme.colorScheme.surface;
@@ -716,9 +646,7 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> with SingleTicker
             ? [
                 BoxShadow(
                   color: Color(
-                        int.tryParse(
-                                a.premiumStyle?['glowColor']?.replaceAll('#', '0xff') ??
-                                    '') ??
+                        int.tryParse(a.premiumStyle?['glowColor']?.replaceAll('#', '0xff') ?? '') ??
                             Colors.tealAccent.value)
                       .withOpacity(0.45),
                   blurRadius: 25,
@@ -734,28 +662,18 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> with SingleTicker
               ],
       ),
       child: ListTile(
-        // ✅ Title
         title: a.isPremium
             ? _buildPremiumText(a)
             : Text(
                 a.text,
-                style: TextStyle(
-                  color: textColor,
-                  fontWeight: FontWeight.w500,
-                ),
+                style: TextStyle(color: textColor, fontWeight: FontWeight.w500),
               ),
-
-        // ✅ Subtitle
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               "by ${a.displayName ?? 'Anonymous'} • ${a.votes} vote${a.votes == 1 ? '' : 's'}",
-              style: TextStyle(
-                color: complementary,
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-              ),
+              style: TextStyle(color: complementary, fontSize: 13, fontWeight: FontWeight.w500),
             ),
             if (isMine && !a.isPremium)
               TextButton.icon(
@@ -766,8 +684,6 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> with SingleTicker
               ),
           ],
         ),
-
-        // ✅ On Tap
         onTap: () => Navigator.push(
           context,
           MaterialPageRoute(
@@ -778,8 +694,6 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> with SingleTicker
             ),
           ),
         ),
-
-        // ✅ Trailing button
         trailing: isVoted
             ? OutlinedButton.icon(
                 icon: Icon(Icons.check, color: complementary),
@@ -800,8 +714,6 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> with SingleTicker
     );
   }
 
-
-  // ---------- Upgrade / Premium ----------
   Future<void> _upgradeAnswer(Answer a) async {
     final result = await Navigator.push(
       context,
@@ -819,18 +731,12 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> with SingleTicker
         SnackBar(
           content: const Text(
             'Premium style applied',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 15,
-              fontWeight: FontWeight.w500,
-            ),
+            style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w500),
           ),
           backgroundColor: Colors.black.withOpacity(0.85),
           behavior: SnackBarBehavior.floating,
           margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           duration: const Duration(seconds: 2),
         ),
       );
@@ -857,13 +763,7 @@ class _TodayQuestionPageState extends State<TodayQuestionPage> with SingleTicker
         fontWeight: bold ? FontWeight.bold : FontWeight.normal,
         fontStyle: italic ? FontStyle.italic : FontStyle.normal,
         shadows: hasShadow
-            ? [
-                Shadow(
-                  color: glowColor.withOpacity(0.6),
-                  blurRadius: 6,
-                  offset: const Offset(1, 1),
-                ),
-              ]
+            ? [Shadow(color: glowColor.withOpacity(0.6), blurRadius: 6, offset: const Offset(1, 1))]
             : [],
       ),
       textAlign: TextAlign.center,
