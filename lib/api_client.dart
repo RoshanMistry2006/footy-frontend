@@ -22,14 +22,14 @@ class ApiClient {
     };
   }
 
-  // ⚙️ GET request (with safe timeout)
+  // ⚙️ GET request
   static Future<http.Response> get(String path) async {
     final headers = await _headers();
     final uri = Uri.parse("$_apiBase$path");
     return http.get(uri, headers: headers).timeout(const Duration(seconds: 15));
   }
 
-  // ⚙️ POST request (with safe timeout)
+  // ⚙️ POST request
   static Future<http.Response> post(String path, Map<String, dynamic> body) async {
     final headers = await _headers();
     final uri = Uri.parse("$_apiBase$path");
@@ -38,7 +38,16 @@ class ApiClient {
         .timeout(const Duration(seconds: 15));
   }
 
-  // ⚙️ DELETE request (with safe timeout)
+  // ⚙️ PATCH request
+  static Future<http.Response> patch(String path, Map<String, dynamic> body) async {
+    final headers = await _headers();
+    final uri = Uri.parse("$_apiBase$path");
+    return http
+        .patch(uri, headers: headers, body: jsonEncode(body))
+        .timeout(const Duration(seconds: 15));
+  }
+
+  // ⚙️ DELETE request
   static Future<http.Response> delete(String path) async {
     final headers = await _headers();
     final uri = Uri.parse("$_apiBase$path");
