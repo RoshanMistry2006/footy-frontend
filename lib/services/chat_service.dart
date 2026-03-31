@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
-import 'api_client.dart';
+import '../api_client.dart';
 
 class ChatService {
   IO.Socket? socket;
