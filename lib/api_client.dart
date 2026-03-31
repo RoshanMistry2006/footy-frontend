@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 class ApiClient {
   // 🌍 API base URL
   static const String baseUrl = "https://footy-backend-yka8.onrender.com";
+  static const String _apiBase = "$baseUrl/api";
 
   // 🔐 Get Firebase ID token (cross-platform)
   static Future<String?> _getToken() async {
@@ -24,15 +25,14 @@ class ApiClient {
   // ⚙️ GET request (with safe timeout)
   static Future<http.Response> get(String path) async {
     final headers = await _headers();
-    final uri = Uri.parse("$baseUrl$path");
-    // ✅ iOS-friendly: prevent infinite hang by adding timeout
+    final uri = Uri.parse("$_apiBase$path");
     return http.get(uri, headers: headers).timeout(const Duration(seconds: 15));
   }
 
   // ⚙️ POST request (with safe timeout)
   static Future<http.Response> post(String path, Map<String, dynamic> body) async {
     final headers = await _headers();
-    final uri = Uri.parse("$baseUrl$path");
+    final uri = Uri.parse("$_apiBase$path");
     return http
         .post(uri, headers: headers, body: jsonEncode(body))
         .timeout(const Duration(seconds: 15));
@@ -41,7 +41,7 @@ class ApiClient {
   // ⚙️ DELETE request (with safe timeout)
   static Future<http.Response> delete(String path) async {
     final headers = await _headers();
-    final uri = Uri.parse("$baseUrl$path");
+    final uri = Uri.parse("$_apiBase$path");
     return http.delete(uri, headers: headers).timeout(const Duration(seconds: 15));
   }
 }
